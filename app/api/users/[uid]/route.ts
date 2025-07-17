@@ -2,6 +2,26 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabaseClient'
 
+export async function GET(
+  req: NextRequest,
+  context: { params: { uid: string } }
+) {
+  try {
+    const uid = context.params.uid
+
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('uid', uid)
+      .single()
+
+    if (error) throw error
+    return NextResponse.json({ data }, { status: 200 })
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+}
+
 // PATCH — update user
 export async function PATCH(
   req: NextRequest,
