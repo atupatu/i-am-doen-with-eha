@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabaseClient'
 
-// GET /api/sessions/[id] - Get a specific session
+// GET /api/sessions/
 export async function GET(req: NextRequest) {
     try {
      
@@ -24,7 +24,8 @@ export async function GET(req: NextRequest) {
     }
   }
 
-//api for user to book a session.
+/* api for user to book a session.- it will only allow for those therapists which
+are assigned to them. */
 
 export async function POST(req: NextRequest) {
   const body = await req.json()
