@@ -604,7 +604,7 @@ function PreferencesAndContact({ handleInputChange, formData }) {
           name="invoiceEmail" 
           type="email" 
           className="rounded-xl"
-          value={formData.invoiceEmail || ""}
+          value={formData.invoice  || ""}
           onChange={handleInputChange}
         />
       </div>
