@@ -204,7 +204,7 @@ export default function AuthForm() {
 
 import { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { supabase } from "@/components/supabase/auth"
+import { supabase } from '@/lib/supabaseClient'
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
