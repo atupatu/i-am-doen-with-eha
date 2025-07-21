@@ -10,6 +10,7 @@ import Navbar from "@/components/navbar";
 import HowItWorks from "@/components/how-it-works"
 import { Clock } from "lucide-react";
 import StatCard from "@/components/stat-card"
+import SiteFooter from "@/components/site-footer"
 
 export default function Home() {
   const scheduleRef = useRef(null)
@@ -166,80 +167,29 @@ export default function Home() {
           </div>
         </section>
 
-        <section ref={scheduleRef} className="py-16 bg-[#c8e6c9]/20">
-          <div className="container">
-            <div className="max-w-3xl mx-auto text-center mb-12">
-              <h2 className="text-3xl font-bold text-gray-800 mb-4">Begin Your Healing Journey Today</h2>
-              <p className="text-gray-600">Take the first step towards a healthier mind and a more fulfilling life.</p>
-            </div>
-            <div className="bg-white p-8 md:p-12 rounded-3xl shadow-lg max-w-3xl mx-auto">
-              <div className="grid gap-6 md:grid-cols-2">
-                <div>
-                  <h3 className="text-xl font-semibold mb-4">Book Your First Session</h3>
-                  <p className="text-gray-600 mb-6">
-                    Schedule a consultation with one of our therapists and start your journey to wellness.
-                  </p>
-                  <Link href="./account" passHref>
-                    <Button className="w-full bg-[#a98cc8] hover:bg-[#9678b4] text-white rounded-xl py-6">
-                      Book Now
-                    </Button>
-                  </Link>
-                </div>
-                <div className="border-t pt-6 md:border-t-0 md:border-l md:pl-6 md:pt-0">
-                  <h3 className="text-xl font-semibold mb-4">Have Questions?</h3>
-                  <p className="text-gray-600 mb-6">Our team is here to help. Reach out to us for any inquiries.</p>
-                  <Button
-                    variant="outline"
-                    className="w-full border-[#a98cc8] text-[#a98cc8] hover:bg-[#fef6f9] rounded-xl py-6"
-                  >
-                    Contact Us
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+        <section ref={scheduleRef} className="py-16 bg-[#fef6f9]/50">
+  <div className="container">
+    <div className="max-w-3xl mx-auto text-center mb-12">
+      <h2 className="text-3xl font-bold text-gray-800 mb-4">Begin Your Healing Journey Today</h2>
+      <p className="text-gray-600">Take the first step towards a healthier mind and a more fulfilling life.</p>
+    </div>
+    <div className="bg-white p-8 md:p-12 rounded-3xl shadow-lg max-w-xl mx-auto text-center">
+      <h3 className="text-xl font-semibold mb-4">Book Your First Session</h3>
+      <p className="text-gray-600 mb-6">
+        Schedule a consultation with one of our therapists and start your journey to wellness.
+      </p>
+      <Link href="./account" passHref>
+        <Button className="w-full bg-[#a98cc8] hover:bg-[#9678b4] text-white rounded-xl py-6">
+          Book Now
+        </Button>
+      </Link>
+    </div>
+  </div>
+</section>
+
       </main>
 
-      <footer className="bg-[#a98cc8]/10 py-12">
-        <div className="container">
-          <div className="grid gap-8 md:grid-cols-4">
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <Heart className="h-6 w-6 text-[#a98cc8]" />
-                <span className="text-xl font-semibold text-[#a98cc8]">Echoing Healthy Ageing</span>
-              </div>
-              <p className="text-gray-600">Providing compassionate mental health care for a better tomorrow.</p>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-4">Quick Links</h3>
-              <ul className="space-y-2">
-                <li><Link href="/" className="text-gray-600 hover:text-[#a98cc8]">Home</Link></li>
-                <li><Link href="/therapists" className="text-gray-600 hover:text-[#a98cc8]">Therapists</Link></li>
-                <li><Link href="/info" className="text-gray-600 hover:text-[#a98cc8]">Info</Link></li>
-                <li><Link href="/schedule" className="text-gray-600 hover:text-[#a98cc8]">Schedule</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-4">Resources</h3>
-              <ul className="space-y-2">
-                <li><Link href="#" className="text-gray-600 hover:text-[#a98cc8]">Blog</Link></li>
-                <li><Link href="#" className="text-gray-600 hover:text-[#a98cc8]">FAQ</Link></li>
-                <li><Link href="#" className="text-gray-600 hover:text-[#a98cc8]">Privacy Policy</Link></li>
-                <li><Link href="#" className="text-gray-600 hover:text-[#a98cc8]">Terms of Service</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-4">Contact</h3>
-              <ul className="space-y-2">
-                <li className="text-gray-600">contact@mindfulcare.com</li>
-                <li className="text-gray-600">+1 (555) 123-4567</li>
-                <li className="text-gray-600">123 Serenity Lane, Peaceful City</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   )
 } 

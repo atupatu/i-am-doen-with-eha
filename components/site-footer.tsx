@@ -9,7 +9,7 @@ export default function SiteFooter() {
           <div>
             <div className="flex items-center gap-2 mb-4">
               <Heart className="h-6 w-6 text-[#a98cc8]" />
-              <span className="text-xl font-semibold text-[#a98cc8]">MindfulCare</span>
+              <span className="text-xl font-semibold text-[#a98cc8]">Echoing Healthy Ageing</span>
             </div>
             <p className="text-gray-600">Providing compassionate mental health care for a better tomorrow.</p>
           </div>
@@ -66,9 +66,9 @@ export default function SiteFooter() {
           <div>
             <h3 className="font-semibold mb-4">Contact</h3>
             <ul className="space-y-2">
-              <li className="text-gray-600">contact@mindfulcare.com</li>
-              <li className="text-gray-600">+1 (555) 123-4567</li>
-              <li className="text-gray-600">123 Serenity Lane, Peaceful City</li>
+              <li className="text-gray-600">info@echoinghealthyageing.com</li>
+              <li className="text-gray-600">(+91) 9867832665 / (+91) 9158656665</li>
+              <li className="text-gray-600">Deccan House, behind DDecor Showroom, Patkar Blocks, Bandra West, Mumbai, Maharashtra 400050</li>
             </ul>
           </div>
         </div>
