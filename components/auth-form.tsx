@@ -204,7 +204,7 @@ export default function AuthForm() {
 
 import { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { supabase } from '@/lib/supabaseClient'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -227,6 +227,7 @@ export default function AuthForm() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   
   const router = useRouter()
+  const supabase = createClientComponentClient()
   const signinEmailRef = useRef<HTMLInputElement>(null)
 
   // Handle sign in
@@ -237,16 +238,25 @@ export default function AuthForm() {
     const password = form.get("password") as string
 
     setLoading(true)
-    const { error, user } = await supabase.auth.signInWithPassword({ email, password })
-    setLoading(false)
+    setError(null)
+    
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ 
+        email, 
+        password 
+      })
 
-    if (error) {
-      setError(error.message)
-    } else {
-      // Store user info in localStorage
-      localStorage.setItem("userAuthenticated", "true")
-      localStorage.setItem("userName", user?.email || email) // Store user email as fallback
-      router.push("/schedule")
+      if (error) {
+        setError(error.message)
+      } else {
+        // This will trigger a refresh of the server-side auth state
+        router.refresh()
+        router.push("/client/schedule")
+      }
+    } catch (err) {
+      setError("An unexpected error occurred")
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -264,38 +274,42 @@ export default function AuthForm() {
     }
 
     setLoading(true)
-    const { error, data } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/account/onboarding`
-      }
-    })
-    setLoading(false)
+    setError(null)
+    
+    try {
+      const { error, data } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/account/onboarding`
+        }
+      })
 
-    if (error) {
-      if (
-        error.message.toLowerCase().includes("already registered") || 
-        error.message.toLowerCase().includes("email already") ||
-        error.message.toLowerCase().includes("already taken") ||
-        error.message.toLowerCase().includes("already exists") ||
-        error.message.toLowerCase().includes("user exists")
-      ) {
-        setAlreadyRegistered(true)
-        setRegisteredEmail(email)
-        setError(null)
+      if (error) {
+        if (
+          error.message.toLowerCase().includes("already registered") || 
+          error.message.toLowerCase().includes("email already") ||
+          error.message.toLowerCase().includes("already taken") ||
+          error.message.toLowerCase().includes("already exists") ||
+          error.message.toLowerCase().includes("user exists")
+        ) {
+          setAlreadyRegistered(true)
+          setRegisteredEmail(email)
+        } else {
+          setError(error.message)
+        }
       } else {
-        setError(error.message)
+        if (data?.user?.identities?.length === 0) {
+          setAlreadyRegistered(true)
+          setRegisteredEmail(email)
+        } else {
+          setShowVerifyMessage(true)
+        }
       }
-    } else {
-      if (data?.user?.identities?.length === 0) {
-        setAlreadyRegistered(true)
-        setRegisteredEmail(email)
-      } else {
-        localStorage.setItem("userAuthenticated", "true")
-        localStorage.setItem("userName", email)
-        setShowVerifyMessage(true)
-      }
+    } catch (err) {
+      setError("An unexpected error occurred")
+    } finally {
+      setLoading(false)
     }
   }
 
