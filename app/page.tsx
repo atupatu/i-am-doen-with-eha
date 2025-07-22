@@ -26,7 +26,7 @@ export default function Home() {
       <Navbar />
 
       <main className="flex-1">
-        <section className="relative bg-gradient-to-b from-[#fef6f9] to-white py-20 md:py-32">
+        {/*<section className="relative bg-gradient-to-b from-[#fef6f9] to-white py-20 md:py-32">
           <div className="container">
             <div className="grid gap-8 md:grid-cols-2 items-center">
               <div className="space-y-6">
@@ -64,9 +64,9 @@ export default function Home() {
               </div>
             </div>
           </div>
-        </section>
+  </section>*/}
 
-        {/* 
+         
         <section className="relative bg-gradient-to-b from-[#fef6f9] to-white min-h-screen flex items-center py-20 md:py-32 overflow-hidden">
           <div className="absolute inset-0">
             <Image
@@ -100,7 +100,7 @@ export default function Home() {
             </div>
           </div>
         </section>
-        */}
+       
 
         <HowItWorks />
 

@@ -58,9 +58,9 @@ export default async function AccountPage() {
   const supabase = createServerComponentClient({ cookies })
   const { data: { session } } = await supabase.auth.getSession()
 
-  if (session) {
+  {/*if (session) {
     redirect("/dashboard")
-  }
+  }*/}
 
   return (
     <div className="flex min-h-screen flex-col">

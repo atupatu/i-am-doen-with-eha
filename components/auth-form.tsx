@@ -212,6 +212,7 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Eye, EyeOff } from "lucide-react"
 
 export default function AuthForm() {
   const [loading, setLoading] = useState(false)
@@ -220,8 +221,12 @@ export default function AuthForm() {
   const [alreadyRegistered, setAlreadyRegistered] = useState(false)
   const [registeredEmail, setRegisteredEmail] = useState("")
   const [activeTab, setActiveTab] = useState("signin")
-  const router = useRouter()
+  // Password visibility states
+  const [showSignInPassword, setShowSignInPassword] = useState(false)
+  const [showSignUpPassword, setShowSignUpPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   
+  const router = useRouter()
   const signinEmailRef = useRef<HTMLInputElement>(null)
 
   // Handle sign in
@@ -269,7 +274,6 @@ export default function AuthForm() {
     setLoading(false)
 
     if (error) {
-      // Check more broadly for already registered email errors
       if (
         error.message.toLowerCase().includes("already registered") || 
         error.message.toLowerCase().includes("email already") ||
@@ -284,13 +288,10 @@ export default function AuthForm() {
         setError(error.message)
       }
     } else {
-      // Check if the user is already registered but needs to verify email
-      // Some Supabase configurations return success even for existing emails
       if (data?.user?.identities?.length === 0) {
         setAlreadyRegistered(true)
         setRegisteredEmail(email)
       } else {
-        // This is a new user, show verification message
         localStorage.setItem("userAuthenticated", "true")
         localStorage.setItem("userName", email)
         setShowVerifyMessage(true)
@@ -298,10 +299,8 @@ export default function AuthForm() {
     }
   }
 
-  // Handle sign in for already registered email
   const handleSwitchToSignIn = () => {
     setActiveTab("signin")
-    // Use timeout to ensure state update happens before we try to set input value
     setTimeout(() => {
       if (signinEmailRef.current) {
         signinEmailRef.current.value = registeredEmail
@@ -310,7 +309,6 @@ export default function AuthForm() {
     setAlreadyRegistered(false)
   }
 
-  // Handle already registered message
   if (alreadyRegistered) {
     return (
       <Card className="w-full shadow-lg border-0">
@@ -333,7 +331,6 @@ export default function AuthForm() {
     )
   }
 
-  // Handle profile verification message
   if (showVerifyMessage) {
     return (
       <Card className="w-full shadow-lg border-0">
@@ -398,7 +395,23 @@ export default function AuthForm() {
 
               <div className="space-y-2">
                 <Label htmlFor="signin-password">Password</Label>
-                <Input id="signin-password" name="password" type="password" placeholder="••••••••" className="rounded-xl" required />
+                <div className="relative">
+                  <Input 
+                    id="signin-password" 
+                    name="password" 
+                    type={showSignInPassword ? "text" : "password"} 
+                    placeholder="••••••••" 
+                    className="rounded-xl pr-10" 
+                    required 
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    onClick={() => setShowSignInPassword(!showSignInPassword)}
+                  >
+                    {showSignInPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
 
               <div className="flex items-center space-x-2 my-4">
@@ -436,12 +449,44 @@ export default function AuthForm() {
 
               <div className="space-y-2">
                 <Label htmlFor="signup-password">Password</Label>
-                <Input id="signup-password" name="password" type="password" placeholder="Create a password" className="rounded-xl" required />
+                <div className="relative">
+                  <Input 
+                    id="signup-password" 
+                    name="password" 
+                    type={showSignUpPassword ? "text" : "password"} 
+                    placeholder="Create a password" 
+                    className="rounded-xl pr-10" 
+                    required 
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    onClick={() => setShowSignUpPassword(!showSignUpPassword)}
+                  >
+                    {showSignUpPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Confirm Password</Label>
-                <Input id="confirmPassword" name="confirmPassword" type="password" placeholder="Confirm your password" className="rounded-xl" required />
+                <div className="relative">
+                  <Input 
+                    id="confirmPassword" 
+                    name="confirmPassword" 
+                    type={showConfirmPassword ? "text" : "password"} 
+                    placeholder="Confirm your password" 
+                    className="rounded-xl pr-10" 
+                    required 
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
 
               <div className="flex items-center space-x-2 my-4">
