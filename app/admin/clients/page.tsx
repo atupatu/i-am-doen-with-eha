@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { ArrowUpDown, ChevronDown, Download, Filter, MoreHorizontal, Search, UserPlus } from "lucide-react"
 import { AdminHeader } from "@/components/admin/header"
 import { Button } from "@/components/ui/button"
@@ -19,101 +19,86 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
-// Mock data for clients
-const clients = [
-  {
-    id: "CL-1001",
-    name: "Alice Johnson",
-    email: "alice@example.com",
-    phone: "+1 (555) 123-4567",
-    status: "active",
-    therapist: "Dr. Sarah Williams",
-    joinedDate: "2023-01-15",
-    lastSession: "2023-06-10",
-    sessions: 12,
-    payments: "$1,440.00",
-  },
-  {
-    id: "CL-1002",
-    name: "Bob Smith",
-    email: "bob@example.com",
-    phone: "+1 (555) 234-5678",
-    status: "active",
-    therapist: "Dr. Michael Brown",
-    joinedDate: "2023-02-20",
-    lastSession: "2023-06-08",
-    sessions: 8,
-    payments: "$960.00",
-  },
-  {
-    id: "CL-1003",
-    name: "Carol Davis",
-    email: "carol@example.com",
-    phone: "+1 (555) 345-6789",
-    status: "inactive",
-    therapist: "Dr. Sarah Williams",
-    joinedDate: "2023-01-05",
-    lastSession: "2023-04-15",
-    sessions: 6,
-    payments: "$720.00",
-  },
-  {
-    id: "CL-1004",
-    name: "David Wilson",
-    email: "david@example.com",
-    phone: "+1 (555) 456-7890",
-    status: "active",
-    therapist: "Dr. James Taylor",
-    joinedDate: "2023-03-10",
-    lastSession: "2023-06-12",
-    sessions: 10,
-    payments: "$1,200.00",
-  },
-  {
-    id: "CL-1005",
-    name: "Eva Martinez",
-    email: "eva@example.com",
-    phone: "+1 (555) 567-8901",
-    status: "active",
-    therapist: "Dr. Michael Brown",
-    joinedDate: "2023-04-05",
-    lastSession: "2023-06-09",
-    sessions: 5,
-    payments: "$600.00",
-  },
-  {
-    id: "CL-1006",
-    name: "Frank Thomas",
-    email: "frank@example.com",
-    phone: "+1 (555) 678-9012",
-    status: "inactive",
-    therapist: "Dr. James Taylor",
-    joinedDate: "2023-02-15",
-    lastSession: "2023-05-20",
-    sessions: 7,
-    payments: "$840.00",
-  },
-  {
-    id: "CL-1007",
-    name: "Grace Lee",
-    email: "grace@example.com",
-    phone: "+1 (555) 789-0123",
-    status: "active",
-    therapist: "Dr. Sarah Williams",
-    joinedDate: "2023-05-01",
-    lastSession: "2023-06-11",
-    sessions: 3,
-    payments: "$360.00",
-  },
-]
+// Type definitions based on your schema
+interface User {
+  uid: string
+  name: string | null
+  email: string | null
+  phone: string | null
+  form_response: any | null
+  assigned_tid: string | null
+  created_at: string | null
+  is_active: boolean
+  call_request_status: 'pending' | 'completed' | 'none' | null
+}
+
+interface Therapist {
+  tid: string
+  name: string
+  email: string
+  info: string | null
+  availability_hours: number | null
+  created_at: string | null
+  user_id: string | null
+}
 
 export default function ClientsPage() {
+  const [clients, setClients] = useState<User[]>([])
+  const [therapists, setTherapists] = useState<Therapist[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [filterStatus, setFilterStatus] = useState("all")
   const [searchQuery, setSearchQuery] = useState("")
 
+  // Fetch clients and therapists from API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true)
+        
+        // Fetch both users and therapists in parallel
+        const [usersResponse, therapistsResponse] = await Promise.all([
+          fetch('/api/users'),
+          fetch('/api/therapists')
+        ])
+        
+        if (!usersResponse.ok) {
+          throw new Error('Failed to fetch clients')
+        }
+        
+        if (!therapistsResponse.ok) {
+          throw new Error('Failed to fetch therapists')
+        }
+        
+        const usersData = await usersResponse.json()
+        const therapistsData = await therapistsResponse.json()
+        
+        if (usersData.error) {
+          throw new Error(usersData.error)
+        }
+        
+        if (therapistsData.error) {
+          throw new Error(therapistsData.error)
+        }
+        
+        setClients(usersData.users || [])
+        setTherapists(therapistsData.therapists || therapistsData || []) // Handle different response formats
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
+
   const filteredClients = clients.filter((client) => {
-    // Filter by status
-    if (filterStatus !== "all" && client.status !== filterStatus) {
+    // Filter by status (using is_active field)
+    if (filterStatus === "active" && !client.is_active) {
+      return false
+    }
+    if (filterStatus === "inactive" && client.is_active) {
       return false
     }
 
@@ -121,14 +106,92 @@ export default function ClientsPage() {
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
       return (
-        client.name.toLowerCase().includes(query) ||
-        client.email.toLowerCase().includes(query) ||
-        client.id.toLowerCase().includes(query)
+        (client.name?.toLowerCase().includes(query)) ||
+        (client.email?.toLowerCase().includes(query)) ||
+        client.uid.toLowerCase().includes(query)
       )
     }
 
     return true
   })
+
+  // Helper function to get therapist name by tid
+  const getTherapistName = (tid: string | null) => {
+    if (!tid) return 'Unassigned'
+    const therapist = therapists.find(t => t.tid === tid)
+    return therapist ? therapist.name : 'Unknown Therapist'
+  }
+
+  // Helper function to format date
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'N/A'
+    return new Date(dateString).toLocaleDateString()
+  }
+
+  // Helper function to get initials
+  const getInitials = (name: string | null) => {
+    if (!name) return 'U'
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+  }
+
+  // Helper function to get status badge
+  const getStatusBadge = (isActive: boolean, callStatus: string | null) => {
+    if (!isActive) {
+      return (
+        <Badge variant="secondary">
+          Inactive
+        </Badge>
+      )
+    }
+    
+    if (callStatus === 'pending') {
+      return (
+        <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">
+          Call Pending
+        </Badge>
+      )
+    }
+
+    return (
+      <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
+        Active
+      </Badge>
+    )
+  }
+
+  if (loading) {
+    return (
+      <div className="h-full flex flex-col">
+        <AdminHeader title="Client Management" />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#a98cc8] mb-4"></div>
+            <p>Loading clients...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="h-full flex flex-col">
+        <AdminHeader title="Client Management" />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-red-600 mb-4">Error: {error}</p>
+            <Button onClick={() => window.location.reload()}>
+              Try Again
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="h-full flex flex-col">
@@ -195,93 +258,101 @@ export default function ClientsPage() {
           <CardHeader className="p-4 pb-2">
             <CardTitle>Client List</CardTitle>
             <CardDescription>
-              {filterStatus === "all"
-                ? "Showing all clients"
-                : filterStatus === "active"
-                  ? "Showing active clients only"
-                  : "Showing inactive clients only"}
+              Showing {filteredClients.length} of {clients.length} clients
+              {filterStatus !== "all" && ` (${filterStatus} only)`}
             </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[50px]">ID</TableHead>
+                  <TableHead className="w-[100px]">Client ID</TableHead>
                   <TableHead>Client</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Therapist</TableHead>
-                  <TableHead>
-                    <div className="flex items-center">
-                      Sessions
-                      <ArrowUpDown className="ml-2 h-4 w-4" />
-                    </div>
-                  </TableHead>
-                  <TableHead>
-                    <div className="flex items-center">
-                      Payments
-                      <ArrowUpDown className="ml-2 h-4 w-4" />
-                    </div>
-                  </TableHead>
-                  <TableHead>Last Session</TableHead>
+                  <TableHead>Phone</TableHead>
+                  <TableHead>Call Status</TableHead>
+                  <TableHead>Joined Date</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredClients.map((client) => (
-                  <TableRow key={client.id}>
-                    <TableCell className="font-medium">{client.id}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={`/placeholder.svg?height=32&width=32`} alt={client.name} />
-                          <AvatarFallback>
-                            {client.name
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="font-medium">{client.name}</div>
-                          <div className="text-sm text-muted-foreground">{client.email}</div>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={client.status === "active" ? "default" : "secondary"}
-                        className={client.status === "active" ? "bg-green-100 text-green-800 hover:bg-green-100" : ""}
-                      >
-                        {client.status === "active" ? "Active" : "Inactive"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{client.therapist}</TableCell>
-                    <TableCell>{client.sessions}</TableCell>
-                    <TableCell>{client.payments}</TableCell>
-                    <TableCell>{new Date(client.lastSession).toLocaleDateString()}</TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Open menu</span>
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem>View details</DropdownMenuItem>
-                          <DropdownMenuItem>Edit client</DropdownMenuItem>
-                          <DropdownMenuItem>View sessions</DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem>Assign therapist</DropdownMenuItem>
-                          <DropdownMenuItem>View payments</DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-red-600">Deactivate</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                {filteredClients.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      No clients found matching your criteria
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  filteredClients.map((client) => (
+                    <TableRow key={client.uid}>
+                      <TableCell className="font-mono text-xs">
+                        {client.uid.substring(0, 8)}...
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={`/placeholder.svg?height=32&width=32`} alt={client.name || 'User'} />
+                            <AvatarFallback>
+                              {getInitials(client.name)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="font-medium">{client.name || 'No name provided'}</div>
+                            <div className="text-sm text-muted-foreground">{client.email || 'No email provided'}</div>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {getStatusBadge(client.is_active, client.call_request_status)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                          <span className="text-sm">
+                            {getTherapistName(client.assigned_tid)}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>{client.phone || 'N/A'}</TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant={
+                            client.call_request_status === 'pending' ? 'default' :
+                            client.call_request_status === 'completed' ? 'secondary' : 
+                            'outline'
+                          }
+                        >
+                          {client.call_request_status || 'none'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{formatDate(client.created_at)}</TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                              <span className="sr-only">Open menu</span>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuItem>View details</DropdownMenuItem>
+                            <DropdownMenuItem>Edit client</DropdownMenuItem>
+                            <DropdownMenuItem>View form response</DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem>Assign therapist</DropdownMenuItem>
+                            <DropdownMenuItem>Update call status</DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="text-red-600">
+                              {client.is_active ? 'Deactivate' : 'Activate'}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </CardContent>
