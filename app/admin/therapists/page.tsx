@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   ArrowUpDown,
   Calendar,
@@ -39,74 +39,119 @@ import {
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 
-// Mock data for therapists
-const therapists = [
-  {
-    id: "TH-001",
-    name: "Dr. Sarah Williams",
-    email: "sarah@example.com",
-    phone: "+1 (555) 123-4567",
-    specialty: "Cognitive Behavioral Therapy",
-    clients: 15,
-    status: "active",
-    availability: "Mon, Wed, Fri",
-    joinedDate: "2022-01-15",
-    earnings: "$4,500.00",
-  },
-  {
-    id: "TH-002",
-    name: "Dr. Michael Brown",
-    email: "michael@example.com",
-    phone: "+1 (555) 234-5678",
-    specialty: "Psychodynamic Therapy",
-    clients: 12,
-    status: "active",
-    availability: "Tue, Thu, Sat",
-    joinedDate: "2022-02-20",
-    earnings: "$3,600.00",
-  },
-  {
-    id: "TH-003",
-    name: "Dr. James Taylor",
-    email: "james@example.com",
-    phone: "+1 (555) 345-6789",
-    specialty: "Mindfulness-Based Therapy",
-    clients: 10,
-    status: "active",
-    availability: "Mon, Tue, Wed, Thu",
-    joinedDate: "2022-03-10",
-    earnings: "$3,000.00",
-  },
-  {
-    id: "TH-004",
-    name: "Dr. Emily Johnson",
-    email: "emily@example.com",
-    phone: "+1 (555) 456-7890",
-    specialty: "Geriatric Counseling",
-    clients: 8,
-    status: "inactive",
-    availability: "Wed, Fri",
-    joinedDate: "2022-04-05",
-    earnings: "$2,400.00",
-  },
-  {
-    id: "TH-005",
-    name: "Dr. Robert Davis",
-    email: "robert@example.com",
-    phone: "+1 (555) 567-8901",
-    specialty: "Trauma-Focused Therapy",
-    clients: 14,
-    status: "active",
-    availability: "Mon, Wed, Fri, Sat",
-    joinedDate: "2022-05-15",
-    earnings: "$4,200.00",
-  },
-]
+interface Therapist {
+  tid: string;
+  name: string;
+  email: string;
+  info: string | null;
+  availability_hours: number | null;
+  created_at: string;
+  user_id: string | null;
+  status?: string; // We'll add this based on some logic
+  clients?: number; // We'll need to fetch this separately
+}
 
 export default function TherapistsPage() {
   const [filterStatus, setFilterStatus] = useState("all")
   const [searchQuery, setSearchQuery] = useState("")
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const [therapists, setTherapists] = useState<Therapist[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // Form state
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    specialty: "",
+    availability: "",
+    bio: ""
+  })
+
+  // Fetch therapists from API
+  useEffect(() => {
+    const fetchTherapists = async () => {
+      try {
+        setLoading(true)
+        const response = await fetch('/api/therapists')
+        if (!response.ok) {
+          throw new Error('Failed to fetch therapists')
+        }
+        const data = await response.json()
+        
+        // Transform the data to match our frontend needs
+        const transformedTherapists = data.therapists.map((therapist: Therapist) => ({
+          ...therapist,
+          id: therapist.tid,
+          status: 'active', // You might want to add actual status logic
+          clients: 0, // You'll need to fetch this from another endpoint
+          specialty: therapist.info || 'Not specified',
+          availability: therapist.availability_hours ? `${therapist.availability_hours} hours/week` : 'Not specified',
+          earnings: '$0.00' // You'll need to calculate this
+        }))
+        
+        setTherapists(transformedTherapists)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An unknown error occurred')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchTherapists()
+  }, [])
+
+  const handleAddTherapist = async () => {
+    try {
+      const response = await fetch('/api/therapists', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          info: formData.specialty,
+          availability_hours: parseInt(formData.availability) || 0,
+          // You'll need to handle user_id appropriately
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to add therapist')
+      }
+
+      const newTherapist = await response.json()
+      
+      // Update local state with the new therapist
+      setTherapists(prev => [
+        ...prev,
+        {
+          ...newTherapist.data[0],
+          id: newTherapist.data[0].tid,
+          status: 'active',
+          clients: 0,
+          specialty: newTherapist.data[0].info || 'Not specified',
+          availability: newTherapist.data[0].availability_hours ? 
+            `${newTherapist.data[0].availability_hours} hours/week` : 'Not specified',
+          earnings: '$0.00'
+        }
+      ])
+
+      setIsAddDialogOpen(false)
+      setFormData({
+        name: "",
+        email: "",
+        phone: "",
+        specialty: "",
+        availability: "",
+        bio: ""
+      })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add therapist')
+    }
+  }
 
   const filteredTherapists = therapists.filter((therapist) => {
     // Filter by status
@@ -120,13 +165,21 @@ export default function TherapistsPage() {
       return (
         therapist.name.toLowerCase().includes(query) ||
         therapist.email.toLowerCase().includes(query) ||
-        therapist.specialty.toLowerCase().includes(query) ||
-        therapist.id.toLowerCase().includes(query)
+        (therapist.info && therapist.info.toLowerCase().includes(query)) ||
+        therapist.tid.toLowerCase().includes(query)
       )
     }
 
     return true
   })
+
+  if (loading) {
+    return <div className="p-8">Loading therapists...</div>
+  }
+
+  if (error) {
+    return <div className="p-8 text-red-500">Error: {error}</div>
+  }
 
   return (
     <div className="h-full flex flex-col">
@@ -153,44 +206,80 @@ export default function TherapistsPage() {
                   <Label htmlFor="name" className="text-right">
                     Name
                   </Label>
-                  <Input id="name" placeholder="Dr. John Doe" className="col-span-3" />
+                  <Input 
+                    id="name" 
+                    placeholder="Dr. John Doe" 
+                    className="col-span-3" 
+                    value={formData.name}
+                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="email" className="text-right">
                     Email
                   </Label>
-                  <Input id="email" placeholder="john@example.com" className="col-span-3" />
+                  <Input 
+                    id="email" 
+                    placeholder="john@example.com" 
+                    className="col-span-3" 
+                    value={formData.email}
+                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="phone" className="text-right">
                     Phone
                   </Label>
-                  <Input id="phone" placeholder="+1 (555) 123-4567" className="col-span-3" />
+                  <Input 
+                    id="phone" 
+                    placeholder="+1 (555) 123-4567" 
+                    className="col-span-3" 
+                    value={formData.phone}
+                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                  />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="specialty" className="text-right">
                     Specialty
                   </Label>
-                  <Input id="specialty" placeholder="Cognitive Behavioral Therapy" className="col-span-3" />
+                  <Input 
+                    id="specialty" 
+                    placeholder="Cognitive Behavioral Therapy" 
+                    className="col-span-3" 
+                    value={formData.specialty}
+                    onChange={(e) => setFormData({...formData, specialty: e.target.value})}
+                  />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="availability" className="text-right">
                     Availability
                   </Label>
-                  <Input id="availability" placeholder="Mon, Wed, Fri" className="col-span-3" />
+                  <Input 
+                    id="availability" 
+                    placeholder="Mon, Wed, Fri" 
+                    className="col-span-3" 
+                    value={formData.availability}
+                    onChange={(e) => setFormData({...formData, availability: e.target.value})}
+                  />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="bio" className="text-right">
                     Bio
                   </Label>
-                  <Textarea id="bio" placeholder="Professional background and experience..." className="col-span-3" />
+                  <Textarea 
+                    id="bio" 
+                    placeholder="Professional background and experience..." 
+                    className="col-span-3" 
+                    value={formData.bio}
+                    onChange={(e) => setFormData({...formData, bio: e.target.value})}
+                  />
                 </div>
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button className="bg-[#a98cc8] hover:bg-[#9678b4]" onClick={() => setIsAddDialogOpen(false)}>
+                <Button className="bg-[#a98cc8] hover:bg-[#9678b4]" onClick={handleAddTherapist}>
                   Save Therapist
                 </Button>
               </DialogFooter>
@@ -269,73 +358,83 @@ export default function TherapistsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredTherapists.map((therapist) => (
-                  <TableRow key={therapist.id}>
-                    <TableCell className="font-medium">{therapist.id}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={`/placeholder.svg?height=32&width=32`} alt={therapist.name} />
-                          <AvatarFallback>
-                            {therapist.name
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="font-medium">{therapist.name}</div>
-                          <div className="text-sm text-muted-foreground">{therapist.email}</div>
+                {filteredTherapists.length > 0 ? (
+                  filteredTherapists.map((therapist) => (
+                    <TableRow key={therapist.tid}>
+                      <TableCell className="font-medium">{therapist.tid.substring(0, 6)}...</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={`/placeholder.svg?height=32&width=32`} alt={therapist.name} />
+                            <AvatarFallback>
+                              {therapist.name
+                                .split(" ")
+                                .map((n) => n[0])
+                                .join("")}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="font-medium">{therapist.name}</div>
+                            <div className="text-sm text-muted-foreground">{therapist.email}</div>
+                          </div>
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>{therapist.specialty}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={therapist.status === "active" ? "default" : "secondary"}
-                        className={
-                          therapist.status === "active" ? "bg-green-100 text-green-800 hover:bg-green-100" : ""
-                        }
-                      >
-                        {therapist.status === "active" ? "Active" : "Inactive"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{therapist.clients}</TableCell>
-                    <TableCell>{therapist.availability}</TableCell>
-                    <TableCell>{therapist.earnings}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <Calendar className="h-4 w-4" />
-                          <span className="sr-only">View schedule</span>
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <Edit className="h-4 w-4" />
-                          <span className="sr-only">Edit</span>
-                        </Button>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <span className="sr-only">Open menu</span>
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem>View details</DropdownMenuItem>
-                            <DropdownMenuItem>Edit therapist</DropdownMenuItem>
-                            <DropdownMenuItem>View clients</DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem>Edit schedule</DropdownMenuItem>
-                            <DropdownMenuItem>View earnings</DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-red-600">Deactivate</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
+                      </TableCell>
+                      <TableCell>{therapist.info || 'Not specified'}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={therapist.status === "active" ? "default" : "secondary"}
+                          className={
+                            therapist.status === "active" ? "bg-green-100 text-green-800 hover:bg-green-100" : ""
+                          }
+                        >
+                          {therapist.status === "active" ? "Active" : "Inactive"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{therapist.clients || 0}</TableCell>
+                      <TableCell>
+                        {therapist.availability_hours ? `${therapist.availability_hours} hours/week` : 'Not specified'}
+                      </TableCell>
+                      <TableCell>{therapist.earnings || '$0.00'}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Calendar className="h-4 w-4" />
+                            <span className="sr-only">View schedule</span>
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Edit className="h-4 w-4" />
+                            <span className="sr-only">Edit</span>
+                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Open menu</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                              <DropdownMenuItem>View details</DropdownMenuItem>
+                              <DropdownMenuItem>Edit therapist</DropdownMenuItem>
+                              <DropdownMenuItem>View clients</DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem>Edit schedule</DropdownMenuItem>
+                              <DropdownMenuItem>View earnings</DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem className="text-red-600">Deactivate</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8">
+                      No therapists found
                     </TableCell>
                   </TableRow>
-                ))}
+                )}
               </TableBody>
             </Table>
           </CardContent>
