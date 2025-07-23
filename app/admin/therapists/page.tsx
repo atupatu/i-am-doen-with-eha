@@ -25,7 +25,10 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+
+//api integration for post method:
 import { AddTherapistDialog } from "@/components/therapist/AddTherapistDialog"
+//api integration for patch method:
 import { TherapistActions } from "@/components/therapist/TherapistActions"
 
 interface Therapist {
