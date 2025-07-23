@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { ArrowUpDown, Calendar, ChevronDown, Filter, MoreHorizontal, Search, UserPlus } from "lucide-react"
 import { AdminHeader } from "@/components/admin/header"
 import { Button } from "@/components/ui/button"
@@ -29,109 +29,25 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 
-// Mock data for assignments
-const assignments = [
-  {
-    id: "AS-1001",
-    client: {
-      id: "CL-1001",
-      name: "Alice Johnson",
-      email: "alice@example.com",
-    },
-    therapist: {
-      id: "TH-001",
-      name: "Dr. Sarah Williams",
-    },
-    status: "active",
-    startDate: "2023-01-20",
-    sessions: 12,
-    nextSession: "2023-06-15",
-    notes: "Weekly sessions for anxiety management",
-  },
-  {
-    id: "AS-1002",
-    client: {
-      id: "CL-1002",
-      name: "Bob Smith",
-      email: "bob@example.com",
-    },
-    therapist: {
-      id: "TH-002",
-      name: "Dr. Michael Brown",
-    },
-    status: "active",
-    startDate: "2023-02-25",
-    sessions: 8,
-    nextSession: "2023-06-18",
-    notes: "Bi-weekly sessions for depression",
-  },
-  {
-    id: "AS-1003",
-    client: {
-      id: "CL-1003",
-      name: "Carol Davis",
-      email: "carol@example.com",
-    },
-    therapist: {
-      id: "TH-001",
-      name: "Dr. Sarah Williams",
-    },
-    status: "inactive",
-    startDate: "2023-01-10",
-    sessions: 6,
-    nextSession: null,
-    notes: "Completed therapy program",
-  },
-  {
-    id: "AS-1004",
-    client: {
-      id: "CL-1004",
-      name: "David Wilson",
-      email: "david@example.com",
-    },
-    therapist: {
-      id: "TH-003",
-      name: "Dr. James Taylor",
-    },
-    status: "active",
-    startDate: "2023-03-15",
-    sessions: 10,
-    nextSession: "2023-06-20",
-    notes: "Weekly sessions for stress management",
-  },
-  {
-    id: "AS-1005",
-    client: {
-      id: "CL-1005",
-      name: "Eva Martinez",
-      email: "eva@example.com",
-    },
-    therapist: {
-      id: "TH-002",
-      name: "Dr. Michael Brown",
-    },
-    status: "active",
-    startDate: "2023-04-10",
-    sessions: 5,
-    nextSession: "2023-06-17",
-    notes: "Weekly sessions for grief counseling",
-  },
-]
+interface Client {
+  uid: string
+  name: string
+  email: string
+}
 
-// Mock data for available clients and therapists
-const availableClients = [
-  { id: "CL-1006", name: "Frank Thomas" },
-  { id: "CL-1007", name: "Grace Lee" },
-  { id: "CL-1008", name: "Henry Garcia" },
-  { id: "CL-1009", name: "Irene Kim" },
-]
+interface Therapist {
+  tid: string
+  name: string
+}
 
-const availableTherapists = [
-  { id: "TH-001", name: "Dr. Sarah Williams" },
-  { id: "TH-002", name: "Dr. Michael Brown" },
-  { id: "TH-003", name: "Dr. James Taylor" },
-  { id: "TH-005", name: "Dr. Robert Davis" },
-]
+interface Assignment {
+  id: string
+  client: Client
+  therapist: Therapist
+  status: string
+  start_date: string
+  notes: string | null
+}
 
 export default function AssignmentsPage() {
   const [filterStatus, setFilterStatus] = useState("all")
@@ -139,6 +55,49 @@ export default function AssignmentsPage() {
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false)
   const [selectedClient, setSelectedClient] = useState("")
   const [selectedTherapist, setSelectedTherapist] = useState("")
+  const [assignments, setAssignments] = useState<Assignment[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // Mock data for available clients and therapists (to be replaced with API calls if needed)
+  const availableClients = [
+    { id: "CL-1006", name: "Frank Thomas" },
+    { id: "CL-1007", name: "Grace Lee" },
+    { id: "CL-1008", name: "Henry Garcia" },
+    { id: "CL-1009", name: "Irene Kim" },
+  ]
+
+  const availableTherapists = [
+    { id: "TH-001", name: "Dr. Sarah Williams" },
+    { id: "TH-002", name: "Dr. Michael Brown" },
+    { id: "TH-003", name: "Dr. James Taylor" },
+    { id: "TH-005", name: "Dr. Robert Davis" },
+  ]
+
+  // Fetch assignments from API
+  useEffect(() => {
+    async function fetchAssignments() {
+      try {
+        setLoading(true)
+        const response = await fetch('/api/assignments')
+        const data = await response.json()
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to fetch assignments')
+        }
+
+        setAssignments(data.assignments || [])
+        setError(null)
+      } catch (err) {
+        setError('Error fetching assignments. Please try again later.')
+        console.error(err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchAssignments()
+  }, [])
 
   const filteredAssignments = assignments.filter((assignment) => {
     // Filter by status
@@ -237,7 +196,7 @@ export default function AssignmentsPage() {
                 <Button
                   className="bg-[#a98cc8] hover:bg-[#9678b4]"
                   onClick={() => {
-                    // Handle assignment creation
+                    // Handle assignment creation (to be implemented with API)
                     setIsAssignDialogOpen(false)
                     setSelectedClient("")
                     setSelectedTherapist("")
@@ -293,106 +252,110 @@ export default function AssignmentsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[50px]">ID</TableHead>
-                  <TableHead>Client</TableHead>
-                  <TableHead>Therapist</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Start Date</TableHead>
-                  <TableHead>
-                    <div className="flex items-center">
-                      Sessions
-                      <ArrowUpDown className="ml-2 h-4 w-4" />
-                    </div>
-                  </TableHead>
-                  <TableHead>Next Session</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredAssignments.map((assignment) => (
-                  <TableRow key={assignment.id}>
-                    <TableCell className="font-medium">{assignment.id}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={`/placeholder.svg?height=32&width=32`} alt={assignment.client.name} />
-                          <AvatarFallback>
-                            {assignment.client.name
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="font-medium">{assignment.client.name}</div>
-                          <div className="text-sm text-muted-foreground">{assignment.client.id}</div>
-                        </div>
+            {loading ? (
+              <div className="p-4">Loading assignments...</div>
+            ) : error ? (
+              <div className="p-4 text-red-600">{error}</div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[50px]">ID</TableHead>
+                    <TableHead>Client</TableHead>
+                    <TableHead>Therapist</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Start Date</TableHead>
+                    <TableHead>
+                      <div className="flex items-center">
+                        Sessions
+                        <ArrowUpDown className="ml-2 h-4 w-4" />
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={`/placeholder.svg?height=32&width=32`} alt={assignment.therapist.name} />
-                          <AvatarFallback>
-                            {assignment.therapist.name
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="font-medium">{assignment.therapist.name}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={assignment.status === "active" ? "default" : "secondary"}
-                        className={
-                          assignment.status === "active" ? "bg-green-100 text-green-800 hover:bg-green-100" : ""
-                        }
-                      >
-                        {assignment.status === "active" ? "Active" : "Inactive"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{new Date(assignment.startDate).toLocaleDateString()}</TableCell>
-                    <TableCell>{assignment.sessions}</TableCell>
-                    <TableCell>
-                      {assignment.nextSession ? new Date(assignment.nextSession).toLocaleDateString() : "N/A"}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <Calendar className="h-4 w-4" />
-                          <span className="sr-only">Schedule</span>
-                        </Button>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <span className="sr-only">Open menu</span>
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem>View details</DropdownMenuItem>
-                            <DropdownMenuItem>Edit assignment</DropdownMenuItem>
-                            <DropdownMenuItem>Schedule session</DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem>View sessions</DropdownMenuItem>
-                            <DropdownMenuItem>View client details</DropdownMenuItem>
-                            <DropdownMenuItem>View therapist details</DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-red-600">End assignment</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </TableCell>
+                    </TableHead>
+                    <TableHead>Next Session</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredAssignments.map((assignment) => (
+                    <TableRow key={assignment.id}>
+                      <TableCell className="font-medium">{assignment.id}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={`/placeholder.svg?height=32&width=32`} alt={assignment.client.name} />
+                            <AvatarFallback>
+                              {assignment.client.name
+                                .split(" ")
+                                .map((n) => n[0])
+                                .join("")}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="font-medium">{assignment.client.name}</div>
+                            <div className="text-sm text-muted-foreground">{assignment.client.uid}</div>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={`/placeholder.svg?height=32&width=32`} alt={assignment.therapist.name} />
+                            <AvatarFallback>
+                              {assignment.therapist.name
+                                .split(" ")
+                                .map((n) => n[0])
+                                .join("")}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="font-medium">{assignment.therapist.name}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={assignment.status === "active" ? "default" : "secondary"}
+                          className={
+                            assignment.status === "active" ? "bg-green-100 text-green-800 hover:bg-green-100" : ""
+                          }
+                        >
+                          {assignment.status === "active" ? "Active" : "Inactive"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{new Date(assignment.start_date).toLocaleDateString()}</TableCell>
+                      <TableCell>{/* Sessions count not available in API response */ "N/A"}</TableCell>
+                      <TableCell>{/* Next session not available in API response */ "N/A"}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Calendar className="h-4 w-4" />
+                            <span className="sr-only">Schedule</span>
+                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Open menu</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                              <DropdownMenuItem>View details</DropdownMenuItem>
+                              <DropdownMenuItem>Edit assignment</DropdownMenuItem>
+                              <DropdownMenuItem>Schedule session</DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem>View sessions</DropdownMenuItem>
+                              <DropdownMenuItem>View client details</DropdownMenuItem>
+                              <DropdownMenuItem>View therapist details</DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem className="text-red-600">End assignment</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
       </div>
