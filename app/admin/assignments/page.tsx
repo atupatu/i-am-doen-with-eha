@@ -286,6 +286,41 @@ export default function AssignmentsPage() {
     }
   }
 
+  const handleResumeAssignment = async (assignmentId: string) => {
+    if (!confirm('Are you sure you want to resume this assignment?')) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/assignments/${assignmentId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: 'active',
+          end_date: null
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to resume assignment')
+      }
+
+      setAssignments(prev => prev.map(assignment => 
+        assignment.id === assignmentId 
+          ? { ...assignment, status: 'active' }
+          : assignment
+      ))
+      
+      showNotification('success', 'Assignment resumed successfully!')
+    } catch (err: any) {
+      showNotification('error', 'Error resuming assignment', err.message)
+    }
+  }
+
   const filteredAssignments = assignments.filter((assignment) => {
     // Filter by status
     if (filterStatus !== "all" && assignment.status !== filterStatus) {
@@ -358,6 +393,7 @@ export default function AssignmentsPage() {
           error={error}
           onEditAssignment={handleEditAssignment}
           onEndAssignment={handleEndAssignment}
+          onResumeAssignment={handleResumeAssignment}
           onViewClientDetails={handleViewClientDetails}
           onViewTherapistDetails={handleViewTherapistDetails}
         />

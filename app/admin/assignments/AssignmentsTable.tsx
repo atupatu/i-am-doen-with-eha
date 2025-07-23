@@ -1,6 +1,6 @@
 "use client"
 
-import { ArrowUpDown, Calendar, MoreHorizontal } from "lucide-react"
+import { ArrowUpDown, Calendar, MoreHorizontal, XCircle, PlayCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -23,6 +23,7 @@ interface AssignmentsTableProps {
   error: string | null
   onEditAssignment: (assignmentId: string) => void
   onEndAssignment: (assignmentId: string) => void
+  onResumeAssignment: (assignmentId: string) => void
   onViewClientDetails: (clientUid: string) => void
   onViewTherapistDetails: (therapistTid: string) => void
 }
@@ -34,6 +35,7 @@ export default function AssignmentsTable({
   error,
   onEditAssignment,
   onEndAssignment,
+  onResumeAssignment,
   onViewClientDetails,
   onViewTherapistDetails
 }: AssignmentsTableProps) {
@@ -167,12 +169,23 @@ export default function AssignmentsTable({
                             View therapist details
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem 
-                            className="text-red-600"
-                            onClick={() => onEndAssignment(assignment.id)}
-                          >
-                            End assignment
-                          </DropdownMenuItem>
+                          {assignment.status === 'active' ? (
+                            <DropdownMenuItem 
+                              className="text-red-600 hover:text-red-700 focus:text-red-700"
+                              onClick={() => onEndAssignment(assignment.id)}
+                            >
+                              <XCircle className="mr-2 h-4 w-4" />
+                              End assignment
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem 
+                              className="text-green-600 hover:text-green-700 focus:text-green-700"
+                              onClick={() => onResumeAssignment(assignment.id)}
+                            >
+                              <PlayCircle className="mr-2 h-4 w-4" />
+                              Resume assignment
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
