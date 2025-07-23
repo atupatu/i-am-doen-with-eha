@@ -246,7 +246,7 @@ export default function AuthForm() {
       // Store user info in localStorage
       localStorage.setItem("userAuthenticated", "true")
       localStorage.setItem("userName", user?.email || email) // Store user email as fallback
-      router.push("/schedule")
+      router.push("/client/schedule")
     }
   }
 

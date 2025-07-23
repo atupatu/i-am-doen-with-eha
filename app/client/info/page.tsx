@@ -1,11 +1,50 @@
+"use client"
+
 import Link from "next/link"
 import Image from "next/image"
 import { Heart, Brain, Users, Sparkles, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Navbar from "@/components/navbar";
 import SiteFooter from "@/components/site-footer";
+import { useEffect, useState } from "react"
+
+interface Package {
+  pid: number;
+  name: string;
+  description: string | null;
+  cost: string;
+  duration: string;
+  min_commitment: string | null;
+}
 
 export default function InfoPage() {
+  const [packages, setPackages] = useState<Package[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch packages from API
+  useEffect(() => {
+    const fetchPackages = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/packages');
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch packages');
+        }
+
+        const data = await response.json();
+        setPackages(data.packages || []);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPackages();
+  }, []);
+
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
@@ -13,63 +52,90 @@ export default function InfoPage() {
         <section className="bg-[#fef6f9] py-16 md:py-24">
           <div className="container">
             <div className="text-center max-w-3xl mx-auto mb-16">
-              <h1 className="text-4xl font-bold mb-6 text-gray-800">Our Therapeutic Approaches</h1>
+              <h1 className="text-4xl font-bold mb-6 text-gray-800">Our Therapy Packages</h1>
               <p className="text-lg text-gray-600">
-                At MindfulCare, we offer a variety of evidence-based therapeutic approaches tailored to your unique
+                At MindfulCare, we offer a variety of evidence-based therapeutic packages tailored to your unique
                 needs and goals.
               </p>
             </div>
 
-            <div className="grid gap-8 md:grid-cols-3">
-              <div className="bg-white p-8 rounded-3xl shadow-lg transition-transform duration-300 hover:-translate-y-2">
-                <div className="bg-[#f4c9c8]/30 p-4 rounded-full inline-block mb-6">
-                  <Brain className="h-8 w-8 text-[#a98cc8]" />
-                </div>
-                <h2 className="text-2xl font-bold mb-4 text-gray-800">Stuck in a Thought Loop?</h2>
-                <p className="text-gray-600 mb-6">
-                  Cognitive Behavioral Therapy (CBT) helps you break free from negative thoughts that affect your mood and actions.
-                  It’s a practical way to feel better, especially if you're dealing with anxiety, stress, or depression.
-                </p>
-
-                <Link href="#" className="text-[#a98cc8] font-medium flex items-center hover:underline">
-                  Learn more <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
+            {loading && (
+              <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#a98cc8]"></div>
+                <p className="mt-4 text-gray-600">Loading packages...</p>
               </div>
+            )}
 
-              <div className="bg-white p-8 rounded-3xl shadow-lg transition-transform duration-300 hover:-translate-y-2">
-                <div className="bg-[#f4c9c8]/30 p-4 rounded-full inline-block mb-6">
-                  <Users className="h-8 w-8 text-[#a98cc8]" />
-                </div>
-                <h2 className="text-2xl font-bold mb-4 text-gray-800">Feeling Lonely or Left Out?</h2>
-                <p className="text-gray-600 mb-6">
-                  Companionship therapy is about building real, meaningful connections. It gives you someone to talk to, lean on,
-                  and share moments with—especially helpful during big life changes or when you’re feeling isolated.
-                </p>
-
-                <Link href="#" className="text-[#a98cc8] font-medium flex items-center hover:underline">
-                  Learn more <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
+            {error && (
+              <div className="text-center py-12">
+                <p className="text-red-600">Error loading packages: {error}</p>
+                <Button 
+                  onClick={() => window.location.reload()} 
+                  className="mt-4 bg-[#a98cc8] hover:bg-[#9678b4] text-white"
+                >
+                  Try Again
+                </Button>
               </div>
+            )}
 
-              <div className="bg-white p-8 rounded-3xl shadow-lg transition-transform duration-300 hover:-translate-y-2">
-                <div className="bg-[#f4c9c8]/30 p-4 rounded-full inline-block mb-6">
-                  <Sparkles className="h-8 w-8 text-[#a98cc8]" />
-                </div>
-                <h2 className="text-2xl font-bold mb-4 text-gray-800">Looking to Stay Sharp?</h2>
-                <p className="text-gray-600 mb-6">
-                  This therapy involves fun and engaging activities that boost memory and thinking skills. It’s ideal for those
-                  facing memory challenges or simply looking to stay mentally active and energized.
-                </p>
-
-                <Link href="#" className="text-[#a98cc8] font-medium flex items-center hover:underline">
-                  Learn more <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
+            {!loading && !error && packages.length === 0 && (
+              <div className="text-center py-12">
+                <p className="text-gray-600">No packages available at the moment.</p>
               </div>
-            </div>
+            )}
+
+            {!loading && !error && packages.length > 0 && (
+              <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+                {packages.map((pkg) => (
+                  <div key={pkg.pid} className="bg-white p-8 rounded-3xl shadow-lg transition-transform duration-300 hover:-translate-y-2">
+                    <div className="bg-[#f4c9c8]/30 p-4 rounded-full inline-block mb-6">
+                      <Heart className="h-8 w-8 text-[#a98cc8]" />
+                    </div>
+                    
+                    <h2 className="text-2xl font-bold mb-4 text-gray-800">{pkg.name}</h2>
+                    
+                    {pkg.description && (
+                      <p className="text-gray-600 mb-6">{pkg.description}</p>
+                    )}
+                    
+                    <div className="space-y-4 mb-6">
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <div className="flex items-start justify-between gap-3">
+                          <span className="text-gray-700 font-medium whitespace-nowrap">Cost:</span>
+                          <span className="text-[#a98cc8] font-bold text-right leading-tight">{pkg.cost}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <div className="flex items-start justify-between gap-3">
+                          <span className="text-gray-700 font-medium whitespace-nowrap">Duration:</span>
+                          <span className="text-gray-800 text-right leading-tight">{pkg.duration}</span>
+                        </div>
+                      </div>
+                      
+                      {pkg.min_commitment && (
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                          <div className="flex items-start justify-between gap-3">
+                            <span className="text-gray-700 font-medium whitespace-nowrap">Min. Commitment:</span>
+                            <span className="text-gray-800 text-right leading-tight">{pkg.min_commitment}</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <Link href="./signin" passHref>
+                      <Button className="w-full bg-[#a98cc8] hover:bg-[#9678b4] text-white rounded-xl">
+                        Select Package
+                      </Button>
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </section>
 
-        <section className="py-16 bg-white">
+        <section className="py-16 bg-[#fef6f9]">
           <div className="container">
             <div className="grid gap-12 md:grid-cols-2 items-center">
               <div>
@@ -130,8 +196,7 @@ export default function InfoPage() {
           </div>
         </section>
 
-         {/* FAQ Section Replacing Our Impact */}
-         <section className="py-16 bg-[#fef6f9]">
+        <section className="py-16 bg-white">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <h2 className="text-3xl font-bold text-center mb-4 text-gray-800">Frequently Asked Questions</h2>
             <p className="text-center text-gray-600 max-w-2xl mx-auto mb-12">
@@ -166,37 +231,9 @@ export default function InfoPage() {
             </div>
           </div>
         </section>
-        {/* <section className="py-16 bg-[#fef6f9]/50">
-          <div className="container">
-            <div className="text-center max-w-3xl mx-auto mb-16">
-              <h2 className="text-3xl font-bold mb-6 text-gray-800">Our Impact</h2>
-              <p className="text-lg text-gray-600">
-                We're proud of the positive change we've helped create in our clients' lives.
-              </p>
-            </div>
-
-            <div className="grid gap-8 md:grid-cols-4">
-              <div className="bg-white p-8 rounded-3xl shadow-md text-center">
-                <h3 className="text-4xl font-bold text-[#a98cc8] mb-2">94%</h3>
-                <p className="text-gray-700">of clients report improved coping skills</p>
-              </div>
-              <div className="bg-white p-8 rounded-3xl shadow-md text-center">
-                <h3 className="text-4xl font-bold text-[#a98cc8] mb-2">87%</h3>
-                <p className="text-gray-700">experience reduced anxiety symptoms</p>
-              </div>
-              <div className="bg-white p-8 rounded-3xl shadow-md text-center">
-                <h3 className="text-4xl font-bold text-[#a98cc8] mb-2">15,000+</h3>
-                <p className="text-gray-700">therapy sessions conducted annually</p>
-              </div>
-              <div className="bg-white p-8 rounded-3xl shadow-md text-center">
-                <h3 className="text-4xl font-bold text-[#a98cc8] mb-2">92%</h3>
-                <p className="text-gray-700">client satisfaction rate</p>
-              </div>
-            </div>
-          </div>
-        </section> */}
+        
       </main>
       <SiteFooter />
     </div>
-  )
+  );
 }

@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { ArrowUpDown, Calendar, ChevronDown, Download, FileText, Filter, MoreHorizontal, Search } from "lucide-react"
+import { useState, useEffect } from "react"
+import { ArrowUpDown, ChevronDown, Download, Filter, MoreHorizontal, Search, UserPlus } from "lucide-react"
 import { AdminHeader } from "@/components/admin/header"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -18,191 +18,131 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-// Define TypeScript interfaces for your data structures
-interface Client {
-  id: string;
-  name: string;
+// Type definitions based on your schema
+interface User {
+  uid: string
+  name: string | null
+  email: string | null
+  phone: string | null
+  form_response: any | null
+  assigned_tid: string | null
+  created_at: string | null
+  is_active: boolean
+  call_request_status: 'pending' | 'completed' | 'none' | null
 }
 
-interface Therapist {
-  id: string;
-  name: string;
+interface Assignment {
+  id: string
+  client_uid: string
+  therapist_tid: string
+  created_at: string
+  client: {
+    uid: string
+    name: string | null
+    email: string | null
+  }
+  therapist: {
+    tid: string
+    name: string
+  }
 }
 
-interface Payment {
-  status: "paid" | "pending" | "refunded";
-  amount: number;
+// Enhanced client type with assignment and session data
+interface EnhancedClient extends User {
+  assignedTherapist?: string
+  sessionCount?: number
 }
 
-interface Session {
-  id: string;
-  client: Client;
-  therapist: Therapist;
-  date: string;
-  duration: number;
-  status: "completed" | "scheduled" | "cancelled";
-  type: string;
-  notes: string;
-  payment: Payment;
-}
-
-// Mock data for sessions
-const sessions: Session[] = [
-  {
-    id: "SES-2001",
-    client: {
-      id: "CL-1001",
-      name: "Alice Johnson",
-    },
-    therapist: {
-      id: "TH-001",
-      name: "Dr. Sarah Williams",
-    },
-    date: "2023-06-05T10:00:00",
-    duration: 60,
-    status: "completed",
-    type: "Individual",
-    notes: "Client showed progress in managing anxiety. Discussed new coping strategies.",
-    payment: {
-      status: "paid",
-      amount: 120.0,
-    },
-  },
-  {
-    id: "SES-2002",
-    client: {
-      id: "CL-1002",
-      name: "Bob Smith",
-    },
-    therapist: {
-      id: "TH-002",
-      name: "Dr. Michael Brown",
-    },
-    date: "2023-06-03T14:00:00",
-    duration: 60,
-    status: "completed",
-    type: "Individual",
-    notes: "Focused on depression management techniques. Client is responding well to therapy.",
-    payment: {
-      status: "paid",
-      amount: 120.0,
-    },
-  },
-  {
-    id: "SES-2003",
-    client: {
-      id: "CL-1004",
-      name: "David Wilson",
-    },
-    therapist: {
-      id: "TH-003",
-      name: "Dr. James Taylor",
-    },
-    date: "2023-06-10T15:30:00",
-    duration: 60,
-    status: "scheduled",
-    type: "Individual",
-    notes: "",
-    payment: {
-      status: "pending",
-      amount: 120.0,
-    },
-  },
-  {
-    id: "SES-2004",
-    client: {
-      id: "CL-1005",
-      name: "Eva Martinez",
-    },
-    therapist: {
-      id: "TH-002",
-      name: "Dr. Michael Brown",
-    },
-    date: "2023-06-02T11:00:00",
-    duration: 60,
-    status: "completed",
-    type: "Individual",
-    notes: "Discussed grief processing techniques. Client is making slow but steady progress.",
-    payment: {
-      status: "paid",
-      amount: 120.0,
-    },
-  },
-  {
-    id: "SES-2005",
-    client: {
-      id: "CL-1007",
-      name: "Grace Lee",
-    },
-    therapist: {
-      id: "TH-001",
-      name: "Dr. Sarah Williams",
-    },
-    date: "2023-06-01T09:00:00",
-    duration: 60,
-    status: "completed",
-    type: "Individual",
-    notes: "Initial assessment session. Client is experiencing mild anxiety related to work stress.",
-    payment: {
-      status: "paid",
-      amount: 120.0,
-    },
-  },
-  {
-    id: "SES-2006",
-    client: {
-      id: "CL-1001",
-      name: "Alice Johnson",
-    },
-    therapist: {
-      id: "TH-001",
-      name: "Dr. Sarah Williams",
-    },
-    date: "2023-06-12T10:00:00",
-    duration: 60,
-    status: "scheduled",
-    type: "Individual",
-    notes: "",
-    payment: {
-      status: "pending",
-      amount: 120.0,
-    },
-  },
-  {
-    id: "SES-2007",
-    client: {
-      id: "CL-1003",
-      name: "Carol Davis",
-    },
-    therapist: {
-      id: "TH-001",
-      name: "Dr. Sarah Williams",
-    },
-    date: "2023-06-08T13:00:00",
-    duration: 60,
-    status: "cancelled",
-    type: "Individual",
-    notes: "Client cancelled due to illness.",
-    payment: {
-      status: "refunded",
-      amount: 0.0,
-    },
-  },
-]
-
-export default function SessionsPage() {
+export default function ClientsPage() {
+  const [clients, setClients] = useState<EnhancedClient[]>([])
+  const [assignments, setAssignments] = useState<Assignment[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [filterStatus, setFilterStatus] = useState("all")
   const [searchQuery, setSearchQuery] = useState("")
-  // Define the type for selectedSession state
-  const [selectedSession, setSelectedSession] = useState<Session | null>(null)
-  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false)
 
-  const filteredSessions = sessions.filter((session) => {
-    // Filter by status
-    if (filterStatus !== "all" && session.status !== filterStatus) {
+  // Fetch clients, assignments, and session counts
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true)
+        
+        // Fetch users and assignments in parallel
+        const [usersResponse, assignmentsResponse] = await Promise.all([
+          fetch('/api/users'),
+          fetch('/api/assignments')
+        ])
+        
+        if (!usersResponse.ok) {
+          throw new Error('Failed to fetch clients')
+        }
+        
+        if (!assignmentsResponse.ok) {
+          throw new Error('Failed to fetch assignments')
+        }
+        
+        const usersData = await usersResponse.json()
+        const assignmentsData = await assignmentsResponse.json()
+        
+        if (usersData.error) {
+          throw new Error(usersData.error)
+        }
+        
+        if (assignmentsData.error) {
+          throw new Error(assignmentsData.error)
+        }
+        
+        const users = usersData.users || []
+        const assignments = assignmentsData.assignments || []
+        
+        setAssignments(assignments)
+        
+        // Enhance users with therapist names and session counts
+        const enhancedClients = await Promise.all(
+          users.map(async (user: User) => {
+            // Find current assignment for this client
+            const currentAssignment = assignments.find(
+              (assignment: Assignment) => assignment.client_uid === user.uid
+            )
+            
+            // Get session count for this client
+            let sessionCount = 0
+            try {
+              const sessionResponse = await fetch(`/api/sessions/client/${user.uid}?count=true`)
+              if (sessionResponse.ok) {
+                const sessionData = await sessionResponse.json()
+                sessionCount = sessionData.count || 0
+              }
+            } catch (err) {
+              console.warn(`Failed to fetch session count for client ${user.uid}:`, err)
+            }
+            
+            return {
+              ...user,
+              assignedTherapist: currentAssignment?.therapist?.name || 'Unassigned',
+              sessionCount
+            } as EnhancedClient
+          })
+        )
+        
+        setClients(enhancedClients)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
+
+  const filteredClients = clients.filter((client) => {
+    // Filter by status (using is_active field)
+    if (filterStatus === "active" && !client.is_active) {
+      return false
+    }
+    if (filterStatus === "inactive" && client.is_active) {
       return false
     }
 
@@ -210,29 +150,96 @@ export default function SessionsPage() {
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
       return (
-        session.client.name.toLowerCase().includes(query) ||
-        session.therapist.name.toLowerCase().includes(query) ||
-        session.id.toLowerCase().includes(query)
+        (client.name?.toLowerCase().includes(query)) ||
+        (client.email?.toLowerCase().includes(query)) ||
+        client.uid.toLowerCase().includes(query) ||
+        (client.assignedTherapist?.toLowerCase().includes(query))
       )
     }
 
     return true
   })
 
-  const handleViewDetails = (session: Session) => {
-    setSelectedSession(session)
-    setIsDetailsDialogOpen(true)
+  // Helper function to format date
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'N/A'
+    return new Date(dateString).toLocaleDateString()
+  }
+
+  // Helper function to get initials
+  const getInitials = (name: string | null) => {
+    if (!name) return 'U'
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+  }
+
+  // Helper function to get status badge
+  const getStatusBadge = (isActive: boolean, callStatus: string | null) => {
+    if (!isActive) {
+      return (
+        <Badge variant="secondary">
+          Inactive
+        </Badge>
+      )
+    }
+    
+    if (callStatus === 'pending') {
+      return (
+        <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">
+          Call Pending
+        </Badge>
+      )
+    }
+
+    return (
+      <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
+        Active
+      </Badge>
+    )
+  }
+
+  if (loading) {
+    return (
+      <div className="h-full flex flex-col">
+        <AdminHeader title="Client Management" />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#a98cc8] mb-4 mx-auto"></div>
+            <p>Loading client data...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="h-full flex flex-col">
+        <AdminHeader title="Client Management" />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-red-600 mb-4">Error: {error}</p>
+            <Button onClick={() => window.location.reload()}>
+              Try Again
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="h-full flex flex-col">
-      <AdminHeader title="Session Management" />
+      <AdminHeader title="Client Management" />
       <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-3xl font-bold tracking-tight">Sessions</h2>
+          <h2 className="text-3xl font-bold tracking-tight">Clients</h2>
           <Button className="bg-[#a98cc8] hover:bg-[#9678b4]">
-            <Calendar className="mr-2 h-4 w-4" />
-            Schedule Session
+            <UserPlus className="mr-2 h-4 w-4" />
+            Add New Client
           </Button>
         </div>
 
@@ -242,7 +249,7 @@ export default function SessionsPage() {
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
-                placeholder="Search sessions..."
+                placeholder="Search clients, therapists..."
                 className="pl-8"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -259,10 +266,9 @@ export default function SessionsPage() {
               <DropdownMenuContent align="end" className="w-[200px]">
                 <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setFilterStatus("all")}>All Sessions</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setFilterStatus("scheduled")}>Scheduled</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setFilterStatus("completed")}>Completed</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setFilterStatus("cancelled")}>Cancelled</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setFilterStatus("all")}>All Clients</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setFilterStatus("active")}>Active Clients</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setFilterStatus("inactive")}>Inactive Clients</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
             <Button variant="outline" className="gap-1">
@@ -288,102 +294,92 @@ export default function SessionsPage() {
 
         <Card>
           <CardHeader className="p-4 pb-2">
-            <CardTitle>Session List</CardTitle>
+            <CardTitle>Client List</CardTitle>
             <CardDescription>
-              {filterStatus === "all" ? "Showing all sessions" : `Showing ${filterStatus} sessions only`}
+              Showing {filteredClients.length} of {clients.length} clients
+              {filterStatus !== "all" && ` (${filterStatus} only)`}
             </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[80px]">ID</TableHead>
+                  <TableHead className="w-[100px]">Client ID</TableHead>
                   <TableHead>Client</TableHead>
-                  <TableHead>Therapist</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Assigned Therapist</TableHead>
                   <TableHead>
                     <div className="flex items-center">
-                      Date & Time
+                      Sessions
                       <ArrowUpDown className="ml-2 h-4 w-4" />
                     </div>
                   </TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Payment</TableHead>
+                  <TableHead>Phone</TableHead>
+                  <TableHead>Call Status</TableHead>
+                  <TableHead>Joined Date</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredSessions.map((session) => (
-                  <TableRow key={session.id}>
-                    <TableCell className="font-medium">{session.id}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={`/placeholder.svg?height=32&width=32`} alt={session.client.name} />
-                          <AvatarFallback>
-                            {session.client.name
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="font-medium">{session.client.name}</div>
-                      </div>
+                {filteredClients.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                      No clients found matching your criteria
                     </TableCell>
-                    <TableCell>{session.therapist.name}</TableCell>
-                    <TableCell>{new Date(session.date).toLocaleString()}</TableCell>
-                    <TableCell>{session.type}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          session.status === "completed"
-                            ? "default"
-                            : session.status === "scheduled"
-                              ? "outline"
-                              : "destructive"
-                        }
-                        className={
-                          session.status === "completed"
-                            ? "bg-green-100 text-green-800 hover:bg-green-100"
-                            : session.status === "scheduled"
-                              ? "bg-blue-100 text-blue-800 hover:bg-blue-100"
-                              : ""
-                        }
-                      >
-                        {session.status.charAt(0).toUpperCase() + session.status.slice(1)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          session.payment.status === "paid"
-                            ? "default"
-                            : session.payment.status === "pending"
-                              ? "outline"
-                              : "secondary"
-                        }
-                        className={
-                          session.payment.status === "paid"
-                            ? "bg-green-100 text-green-800 hover:bg-green-100"
-                            : session.payment.status === "pending"
-                              ? "bg-yellow-100 text-yellow-800 hover:bg-yellow-100"
-                              : ""
-                        }
-                      >
-                        {session.payment.status.charAt(0).toUpperCase() + session.payment.status.slice(1)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => handleViewDetails(session)}
+                  </TableRow>
+                ) : (
+                  filteredClients.map((client) => (
+                    <TableRow key={client.uid}>
+                      <TableCell className="font-mono text-xs">
+                        {client.uid.substring(0, 8)}...
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={`/placeholder.svg?height=32&width=32`} alt={client.name || 'User'} />
+                            <AvatarFallback>
+                              {getInitials(client.name)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="font-medium">{client.name || 'No name provided'}</div>
+                            <div className="text-sm text-muted-foreground">{client.email || 'No email provided'}</div>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {getStatusBadge(client.is_active, client.call_request_status)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div className={`h-2 w-2 rounded-full ${
+                            client.assignedTherapist === 'Unassigned' ? 'bg-gray-400' : 'bg-blue-500'
+                          }`}></div>
+                          <span className="text-sm">
+                            {client.assignedTherapist}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <span className="font-medium">{client.sessionCount || 0}</span>
+                          <span className="text-xs text-muted-foreground">sessions</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>{client.phone || 'N/A'}</TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant={
+                            client.call_request_status === 'pending' ? 'default' :
+                            client.call_request_status === 'completed' ? 'secondary' : 
+                            'outline'
+                          }
                         >
-                          <FileText className="h-4 w-4" />
-                          <span className="sr-only">View details</span>
-                        </Button>
+                          {client.call_request_status || 'none'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{formatDate(client.created_at)}</TableCell>
+                      <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="h-8 w-8 p-0">
@@ -393,221 +389,28 @@ export default function SessionsPage() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem onClick={() => handleViewDetails(session)}>View details</DropdownMenuItem>
-                            <DropdownMenuItem>View client</DropdownMenuItem>
-                            <DropdownMenuItem>View therapist</DropdownMenuItem>
+                            <DropdownMenuItem>View details</DropdownMenuItem>
+                            <DropdownMenuItem>Edit client</DropdownMenuItem>
+                            <DropdownMenuItem>View sessions</DropdownMenuItem>
+                            <DropdownMenuItem>View form response</DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            {session.status === "scheduled" && (
-                              <>
-                                <DropdownMenuItem>Reschedule</DropdownMenuItem>
-                                <DropdownMenuItem>Mark as completed</DropdownMenuItem>
-                                <DropdownMenuItem className="text-red-600">Cancel session</DropdownMenuItem>
-                              </>
-                            )}
-                            {session.status === "completed" && (
-                              <>
-                                <DropdownMenuItem>View report</DropdownMenuItem>
-                                <DropdownMenuItem>Send summary to client</DropdownMenuItem>
-                              </>
-                            )}
+                            <DropdownMenuItem>Assign/Change therapist</DropdownMenuItem>
+                            <DropdownMenuItem>Update call status</DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="text-red-600">
+                              {client.is_active ? 'Deactivate' : 'Activate'}
+                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </CardContent>
         </Card>
       </div>
-
-      {selectedSession && (
-        <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
-          <DialogContent className="sm:max-w-[600px]">
-            <DialogHeader>
-              <DialogTitle>Session Details</DialogTitle>
-              <DialogDescription>
-                {selectedSession.id} - {new Date(selectedSession.date).toLocaleDateString()}
-              </DialogDescription>
-            </DialogHeader>
-            <Tabs defaultValue="details">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="details">Details</TabsTrigger>
-                <TabsTrigger value="notes">Notes & Report</TabsTrigger>
-                <TabsTrigger value="payment">Payment</TabsTrigger>
-              </TabsList>
-              <TabsContent value="details" className="space-y-4 pt-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Client</h3>
-                    <div className="flex items-center gap-2">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={`/placeholder.svg?height=32&width=32`} alt={selectedSession.client.name} />
-                        <AvatarFallback>
-                          {selectedSession.client.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="font-medium">{selectedSession.client.name}</div>
-                    </div>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Therapist</h3>
-                    <div className="flex items-center gap-2">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={`/placeholder.svg?height=32&width=32`} alt={selectedSession.therapist.name} />
-                        <AvatarFallback>
-                          {selectedSession.therapist.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="font-medium">{selectedSession.therapist.name}</div>
-                    </div>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Date & Time</h3>
-                    <p>{new Date(selectedSession.date).toLocaleString()}</p>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Duration</h3>
-                    <p>{selectedSession.duration} minutes</p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Type</h3>
-                    <p>{selectedSession.type}</p>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Status</h3>
-                    <Badge
-                      variant={
-                        selectedSession.status === "completed"
-                          ? "default"
-                          : selectedSession.status === "scheduled"
-                            ? "outline"
-                            : "destructive"
-                      }
-                      className={
-                        selectedSession.status === "completed"
-                          ? "bg-green-100 text-green-800 hover:bg-green-100"
-                          : selectedSession.status === "scheduled"
-                            ? "bg-blue-100 text-blue-800 hover:bg-blue-100"
-                            : ""
-                      }
-                    >
-                      {selectedSession.status.charAt(0).toUpperCase() + selectedSession.status.slice(1)}
-                    </Badge>
-                  </div>
-                </div>
-              </TabsContent>
-              <TabsContent value="notes" className="space-y-4 pt-4">
-                {selectedSession.status === "completed" ? (
-                  <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Session Notes</h3>
-                    <div className="border rounded-md p-3 bg-muted/50">
-                      <p>{selectedSession.notes || "No notes available."}</p>
-                    </div>
-                    <div className="mt-4">
-                      <h3 className="text-sm font-medium text-muted-foreground mb-2">Session Report</h3>
-                      <div className="border rounded-md p-3 bg-muted/50">
-                        <p className="text-muted-foreground italic">
-                          {selectedSession.notes
-                            ? "Detailed report available for download."
-                            : "No report available for this session."}
-                        </p>
-                        {selectedSession.notes && (
-                          <Button variant="outline" size="sm" className="mt-2 gap-1">
-                            <Download className="h-4 w-4" />
-                            Download Report
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center h-40">
-                    <p className="text-muted-foreground">
-                      {selectedSession.status === "scheduled"
-                        ? "Notes will be available after the session is completed."
-                        : "This session was cancelled. No notes available."}
-                    </p>
-                  </div>
-                )}
-              </TabsContent>
-              <TabsContent value="payment" className="space-y-4 pt-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Payment Status</h3>
-                    <Badge
-                      variant={
-                        selectedSession.payment.status === "paid"
-                          ? "default"
-                          : selectedSession.payment.status === "pending"
-                            ? "outline"
-                            : "secondary"
-                      }
-                      className={
-                        selectedSession.payment.status === "paid"
-                          ? "bg-green-100 text-green-800 hover:bg-green-100"
-                          : selectedSession.payment.status === "pending"
-                            ? "bg-yellow-100 text-yellow-800 hover:bg-yellow-100"
-                            : ""
-                      }
-                    >
-                      {selectedSession.payment.status.charAt(0).toUpperCase() + selectedSession.payment.status.slice(1)}
-                    </Badge>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Amount</h3>
-                    <p>${selectedSession.payment.amount.toFixed(2)}</p>
-                  </div>
-                </div>
-                {selectedSession.payment.status === "paid" && (
-                  <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Payment Details</h3>
-                    <div className="border rounded-md p-3 bg-muted/50">
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Payment ID</p>
-                          <p>PAY-{Math.floor(1000 + Math.random() * 9000)}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Payment Date</p>
-                          <p>{new Date(selectedSession.date).toLocaleDateString()}</p>
-                        </div>
-                      </div>
-                      <div className="mt-2">
-                        <p className="text-sm text-muted-foreground">Payment Method</p>
-                        <p>Credit Card (ending in 1234)</p>
-                      </div>
-                      <div className="mt-2">
-                        <Button variant="outline" size="sm" className="gap-1">
-                          <Download className="h-4 w-4" />
-                          Download Receipt
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                {selectedSession.payment.status === "pending" && (
-                  <div className="flex flex-col items-center justify-center gap-4 py-4">
-                    <p className="text-muted-foreground">This payment is pending and has not been processed yet.</p>
-                    <Button className="bg-[#a98cc8] hover:bg-[#9678b4]">Process Payment</Button>
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
-          </DialogContent>
-        </Dialog>
-      )}
     </div>
   )
 }
