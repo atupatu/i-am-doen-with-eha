@@ -1,78 +1,59 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { ArrowUpDown, Calendar, ChevronDown, Filter, MoreHorizontal, Search, UserPlus } from "lucide-react"
+import { UserPlus, X } from "lucide-react"
 import { AdminHeader } from "@/components/admin/header"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
-
-interface Client {
-  uid: string
-  name: string
-  email: string
-}
-
-interface Therapist {
-  tid: string
-  name: string
-}
-
-interface Assignment {
-  id: string
-  client: Client
-  therapist: Therapist
-  status: string
-  start_date: string
-  notes: string | null
-}
+import { Dialog, DialogTrigger } from "@/components/ui/dialog"
+import AssignmentsTable from "./AssignmentsTable"
+import AssignmentFilters from "./AssignmentFilters"
+import CreateAssignmentDialog, { EditAssignmentDialog } from "./AssignmentDialogs"
+import { Assignment, AvailableClient, AvailableTherapist } from "./types"
 
 export default function AssignmentsPage() {
+  // Filter and search states
   const [filterStatus, setFilterStatus] = useState("all")
   const [searchQuery, setSearchQuery] = useState("")
+  
+  // Dialog states
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  
+  // Form states
   const [selectedClient, setSelectedClient] = useState("")
   const [selectedTherapist, setSelectedTherapist] = useState("")
+  const [startDate, setStartDate] = useState(new Date().toISOString().split("T")[0])
+  const [notes, setNotes] = useState("")
+  const [editingAssignment, setEditingAssignment] = useState<Assignment | null>(null)
+  const [editStatus, setEditStatus] = useState("")
+  
+  // Data states
   const [assignments, setAssignments] = useState<Assignment[]>([])
+  const [availableClients, setAvailableClients] = useState<AvailableClient[]>([])
+  const [availableTherapists, setAvailableTherapists] = useState<AvailableTherapist[]>([])
+  
+  // Loading states
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isCreating, setIsCreating] = useState(false)
+  const [isUpdating, setIsUpdating] = useState(false)
 
-  // Mock data for available clients and therapists (to be replaced with API calls if needed)
-  const availableClients = [
-    { id: "CL-1006", name: "Frank Thomas" },
-    { id: "CL-1007", name: "Grace Lee" },
-    { id: "CL-1008", name: "Henry Garcia" },
-    { id: "CL-1009", name: "Irene Kim" },
-  ]
+  // Notification box states
+  const [notification, setNotification] = useState<{
+    type: 'success' | 'error' | 'info';
+    message: string;
+    details?: string;
+  } | null>(null)
 
-  const availableTherapists = [
-    { id: "TH-001", name: "Dr. Sarah Williams" },
-    { id: "TH-002", name: "Dr. Michael Brown" },
-    { id: "TH-003", name: "Dr. James Taylor" },
-    { id: "TH-005", name: "Dr. Robert Davis" },
-  ]
+  // Show notification box
+  const showNotification = (type: 'success' | 'error' | 'info', message: string, details?: string) => {
+    setNotification({ type, message, details })
+  }
+
+  // Close notification box
+  const closeNotification = () => {
+    setNotification(null)
+  }
 
   // Fetch assignments from API
   useEffect(() => {
@@ -99,6 +80,212 @@ export default function AssignmentsPage() {
     fetchAssignments()
   }, [])
 
+  // Fetch available clients and therapists when either dialog opens
+  useEffect(() => {
+    async function fetchAvailableOptions() {
+      if (!isAssignDialogOpen && !isEditDialogOpen) return
+
+      try {
+        const [clientsResponse, therapistsResponse] = await Promise.all([
+          fetch('/api/users'),
+          fetch('/api/therapists')
+        ])
+
+        const clientsData = await clientsResponse.json()
+        const therapistsData = await therapistsResponse.json()
+
+        if (clientsResponse.ok) {
+          setAvailableClients(clientsData.users || [])
+        }
+        if (therapistsResponse.ok) {
+          setAvailableTherapists(therapistsData.therapists || [])
+        }
+      } catch (err) {
+        console.error('Error fetching available options:', err)
+      }
+    }
+
+    fetchAvailableOptions()
+  }, [isAssignDialogOpen, isEditDialogOpen])
+
+  const handleCreateAssignment = async () => {
+    if (!selectedClient || !selectedTherapist) {
+      showNotification('error', 'Please select both a client and therapist')
+      return
+    }
+
+    setIsCreating(true)
+    try {
+      const response = await fetch('/api/assignments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          client_uid: selectedClient,
+          therapist_tid: selectedTherapist,
+          start_date: startDate,
+          notes: notes || null,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create assignment')
+      }
+
+      setAssignments(prev => [data.assignment, ...prev])
+      resetCreateForm()
+      showNotification('success', 'Assignment created successfully!')
+    } catch (err: any) {
+      showNotification('error', 'Error creating assignment', err.message)
+    } finally {
+      setIsCreating(false)
+    }
+  }
+
+  const resetCreateForm = () => {
+    setIsAssignDialogOpen(false)
+    setSelectedClient("")
+    setSelectedTherapist("")
+    setStartDate(new Date().toISOString().split("T")[0])
+    setNotes("")
+  }
+
+  const handleEditAssignment = (assignmentId: string) => {
+    const assignment = assignments.find(a => a.id === assignmentId)
+    if (assignment) {
+      setEditingAssignment(assignment)
+      setSelectedClient(assignment.client.uid)
+      setSelectedTherapist(assignment.therapist.tid)
+      setStartDate(assignment.start_date)
+      setNotes(assignment.notes || "")
+      setEditStatus(assignment.status)
+      setIsEditDialogOpen(true)
+    }
+  }
+
+  const handleUpdateAssignment = async () => {
+    if (!editingAssignment || !selectedClient || !selectedTherapist) {
+      showNotification('error', 'Please select both a client and therapist')
+      return
+    }
+
+    setIsUpdating(true)
+    try {
+      const response = await fetch(`/api/assignments/${editingAssignment.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          client_uid: selectedClient,
+          therapist_tid: selectedTherapist,
+          start_date: startDate,
+          notes: notes || null,
+          status: editStatus,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update assignment')
+      }
+
+      setAssignments(prev => prev.map(assignment => 
+        assignment.id === editingAssignment.id 
+          ? data.assignment
+          : assignment
+      ))
+      
+      resetEditForm()
+      showNotification('success', 'Assignment updated successfully!')
+    } catch (err: any) {
+      showNotification('error', 'Error updating assignment', err.message)
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  const resetEditForm = () => {
+    setIsEditDialogOpen(false)
+    setEditingAssignment(null)
+    setSelectedClient("")
+    setSelectedTherapist("")
+    setStartDate(new Date().toISOString().split("T")[0])
+    setNotes("")
+    setEditStatus("")
+  }
+
+  const handleViewClientDetails = async (clientUid: string) => {
+    try {
+      const response = await fetch(`/api/users/${clientUid}`)
+      const data = await response.json()
+      
+      if (response.ok) {
+        console.log('Client details:', data.data)
+        showNotification('info', 'Client Details', `Name: ${data.data.name}\nEmail: ${data.data.email}\nUID: ${data.data.uid}`)
+      } else {
+        throw new Error(data.error || 'Failed to fetch client details')
+      }
+    } catch (err: any) {
+      showNotification('error', 'Error fetching client details', err.message)
+    }
+  }
+
+  const handleViewTherapistDetails = async (therapistTid: string) => {
+    try {
+      const response = await fetch(`/api/therapists/${therapistTid}`)
+      const data = await response.json()
+      
+      if (response.ok) {
+        console.log('Therapist details:', data.therapist)
+        showNotification('info', 'Therapist Details', `Name: ${data.therapist.name}\nTID: ${data.therapist.tid}`)
+      } else {
+        throw new Error(data.error || 'Failed to fetch therapist details')
+      }
+    } catch (err: any) {
+      showNotification('error', 'Error fetching therapist details', err.message)
+    }
+  }
+
+  const handleEndAssignment = async (assignmentId: string) => {
+    if (!confirm('Are you sure you want to end this assignment?')) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/assignments/${assignmentId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: 'inactive',
+          end_date: new Date().toISOString().split('T')[0]
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to end assignment')
+      }
+
+      setAssignments(prev => prev.map(assignment => 
+        assignment.id === assignmentId 
+          ? { ...assignment, status: 'inactive' }
+          : assignment
+      ))
+      
+      showNotification('success', 'Assignment ended successfully!')
+    } catch (err: any) {
+      showNotification('error', 'Error ending assignment', err.message)
+    }
+  }
+
   const filteredAssignments = assignments.filter((assignment) => {
     // Filter by status
     if (filterStatus !== "all" && assignment.status !== filterStatus) {
@@ -121,6 +308,29 @@ export default function AssignmentsPage() {
   return (
     <div className="h-full flex flex-col">
       <AdminHeader title="Client-Therapist Assignments" />
+      
+      {/* Notification Box */}
+      {notification && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20">
+          <div className="bg-gradient-to-br from-white to-purple-50 border border-purple-100 p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <h4 className="font-medium text-gray-800">{notification.message}</h4>
+                {notification.details && (
+                  <p className="mt-2 text-sm text-gray-600 whitespace-pre-line">{notification.details}</p>
+                )}
+              </div>
+              <button
+                onClick={closeNotification}
+                className="ml-3 flex-shrink-0 p-1 hover:bg-purple-100 rounded text-gray-500 hover:text-gray-700"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
         <div className="flex items-center justify-between">
           <h2 className="text-3xl font-bold tracking-tight">Assignments</h2>
@@ -131,233 +341,65 @@ export default function AssignmentsPage() {
                 New Assignment
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[525px]">
-              <DialogHeader>
-                <DialogTitle>Assign Client to Therapist</DialogTitle>
-                <DialogDescription>Select a client and therapist to create a new assignment.</DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="client" className="text-right">
-                    Client
-                  </Label>
-                  <Select value={selectedClient} onValueChange={setSelectedClient}>
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="Select client" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableClients.map((client) => (
-                        <SelectItem key={client.id} value={client.id}>
-                          {client.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="therapist" className="text-right">
-                    Therapist
-                  </Label>
-                  <Select value={selectedTherapist} onValueChange={setSelectedTherapist}>
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="Select therapist" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableTherapists.map((therapist) => (
-                        <SelectItem key={therapist.id} value={therapist.id}>
-                          {therapist.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="startDate" className="text-right">
-                    Start Date
-                  </Label>
-                  <Input
-                    id="startDate"
-                    type="date"
-                    className="col-span-3"
-                    defaultValue={new Date().toISOString().split("T")[0]}
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="notes" className="text-right">
-                    Notes
-                  </Label>
-                  <Input id="notes" placeholder="Session frequency, focus areas, etc." className="col-span-3" />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsAssignDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button
-                  className="bg-[#a98cc8] hover:bg-[#9678b4]"
-                  onClick={() => {
-                    // Handle assignment creation (to be implemented with API)
-                    setIsAssignDialogOpen(false)
-                    setSelectedClient("")
-                    setSelectedTherapist("")
-                  }}
-                >
-                  Create Assignment
-                </Button>
-              </DialogFooter>
-            </DialogContent>
           </Dialog>
         </div>
 
-        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-          <div className="flex w-full md:w-auto items-center gap-2">
-            <div className="relative w-full md:w-[300px]">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search assignments..."
-                className="pl-8"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="gap-1">
-                  <Filter className="h-4 w-4" />
-                  Filter
-                  <ChevronDown className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-[200px]">
-                <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setFilterStatus("all")}>All Assignments</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setFilterStatus("active")}>Active Assignments</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setFilterStatus("inactive")}>Inactive Assignments</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
+        <AssignmentFilters
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          filterStatus={filterStatus}
+          onFilterChange={setFilterStatus}
+        />
 
-        <Card>
-          <CardHeader className="p-4 pb-2">
-            <CardTitle>Client-Therapist Assignments</CardTitle>
-            <CardDescription>
-              {filterStatus === "all"
-                ? "Showing all assignments"
-                : filterStatus === "active"
-                  ? "Showing active assignments only"
-                  : "Showing inactive assignments only"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-0">
-            {loading ? (
-              <div className="p-4">Loading assignments...</div>
-            ) : error ? (
-              <div className="p-4 text-red-600">{error}</div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[50px]">ID</TableHead>
-                    <TableHead>Client</TableHead>
-                    <TableHead>Therapist</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Start Date</TableHead>
-                    <TableHead>
-                      <div className="flex items-center">
-                        Sessions
-                        <ArrowUpDown className="ml-2 h-4 w-4" />
-                      </div>
-                    </TableHead>
-                    <TableHead>Next Session</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredAssignments.map((assignment) => (
-                    <TableRow key={assignment.id}>
-                      <TableCell className="font-medium">{assignment.id}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage src={`/placeholder.svg?height=32&width=32`} alt={assignment.client.name} />
-                            <AvatarFallback>
-                              {assignment.client.name
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <div className="font-medium">{assignment.client.name}</div>
-                            <div className="text-sm text-muted-foreground">{assignment.client.uid}</div>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage src={`/placeholder.svg?height=32&width=32`} alt={assignment.therapist.name} />
-                            <AvatarFallback>
-                              {assignment.therapist.name
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="font-medium">{assignment.therapist.name}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={assignment.status === "active" ? "default" : "secondary"}
-                          className={
-                            assignment.status === "active" ? "bg-green-100 text-green-800 hover:bg-green-100" : ""
-                          }
-                        >
-                          {assignment.status === "active" ? "Active" : "Inactive"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{new Date(assignment.start_date).toLocaleDateString()}</TableCell>
-                      <TableCell>{/* Sessions count not available in API response */ "N/A"}</TableCell>
-                      <TableCell>{/* Next session not available in API response */ "N/A"}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <Calendar className="h-4 w-4" />
-                            <span className="sr-only">Schedule</span>
-                          </Button>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-8 w-8 p-0">
-                                <span className="sr-only">Open menu</span>
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem>View details</DropdownMenuItem>
-                              <DropdownMenuItem>Edit assignment</DropdownMenuItem>
-                              <DropdownMenuItem>Schedule session</DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem>View sessions</DropdownMenuItem>
-                              <DropdownMenuItem>View client details</DropdownMenuItem>
-                              <DropdownMenuItem>View therapist details</DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-red-600">End assignment</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
+        <AssignmentsTable
+          assignments={filteredAssignments}
+          filterStatus={filterStatus}
+          loading={loading}
+          error={error}
+          onEditAssignment={handleEditAssignment}
+          onEndAssignment={handleEndAssignment}
+          onViewClientDetails={handleViewClientDetails}
+          onViewTherapistDetails={handleViewTherapistDetails}
+        />
+
+        <CreateAssignmentDialog
+          isOpen={isAssignDialogOpen}
+          onOpenChange={setIsAssignDialogOpen}
+          selectedClient={selectedClient}
+          onClientChange={setSelectedClient}
+          selectedTherapist={selectedTherapist}
+          onTherapistChange={setSelectedTherapist}
+          startDate={startDate}
+          onStartDateChange={setStartDate}
+          notes={notes}
+          onNotesChange={setNotes}
+          availableClients={availableClients}
+          availableTherapists={availableTherapists}
+          isCreating={isCreating}
+          onSubmit={handleCreateAssignment}
+          onCancel={resetCreateForm}
+        />
+
+        <EditAssignmentDialog
+          isOpen={isEditDialogOpen}
+          onOpenChange={setIsEditDialogOpen}
+          editingAssignment={editingAssignment}
+          selectedClient={selectedClient}
+          onClientChange={setSelectedClient}
+          selectedTherapist={selectedTherapist}
+          onTherapistChange={setSelectedTherapist}
+          startDate={startDate}
+          onStartDateChange={setStartDate}
+          notes={notes}
+          onNotesChange={setNotes}
+          editStatus={editStatus}
+          onStatusChange={setEditStatus}
+          availableClients={availableClients}
+          availableTherapists={availableTherapists}
+          isUpdating={isUpdating}
+          onSubmit={handleUpdateAssignment}
+          onCancel={resetEditForm}
+        />
       </div>
     </div>
   )
