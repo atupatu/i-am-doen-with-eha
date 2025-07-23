@@ -22,17 +22,17 @@ export default function SiteFooter() {
                 </Link>
               </li>
               <li>
-                <Link href="/therapists" className="text-gray-600 hover:text-[#a98cc8]">
+                <Link href="/client/therapists" className="text-gray-600 hover:text-[#a98cc8]">
                   Therapists
                 </Link>
               </li>
               <li>
-                <Link href="/info" className="text-gray-600 hover:text-[#a98cc8]">
+                <Link href="client/info" className="text-gray-600 hover:text-[#a98cc8]">
                   Info
                 </Link>
               </li>
               <li>
-                <Link href="/schedule" className="text-gray-600 hover:text-[#a98cc8]">
+                <Link href="client/schedule" className="text-gray-600 hover:text-[#a98cc8]">
                   Schedule
                 </Link>
               </li>

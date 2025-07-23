@@ -32,7 +32,7 @@ const HowItWorks = () => {
   return (
     <div className="py-8 px-4 md:px-6 lg:px-8 bg-[#7a5aa0]/10">
       <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-10">
+        <div className="text-center mb-4">
           <h2 className="text-3xl font-bold text-black mb-3">How It Works</h2>
           <p className="text-gray-600 max-w-2xl mx-auto">
             Our simple process to connect you with the right therapist and start your journey to better mental health.
@@ -43,7 +43,7 @@ const HowItWorks = () => {
           {steps.map((step) => (
             <div 
               key={step.id}
-              className="bg-white rounded-2xl shadow-md p-8 transition-all duration-300 hover:shadow-lg flex flex-col items-center text-center w-full max-w-md"
+              className="bg-white rounded-2xl shadow-md p-6 transition-all duration-300 hover:shadow-lg flex flex-col items-center text-center w-full max-w-md"
             >
               <div className={`rounded-full p-4 mb-4 flex items-center justify-center ${
                 step.id === 1 ? "bg-blue-100" :
