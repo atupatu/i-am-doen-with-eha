@@ -22,27 +22,23 @@ export async function GET(
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }
-
 export async function PATCH(
   req: NextRequest,
   context: { params: Promise<{ uid: string }> }
 ) {
   try {
-<<<<<<< HEAD
-    const uid = context.params.uid
-    console.log(`PATCH request for UID: ${uid}`) 
-=======
-    const params = await context.params  // Await params first
+    const params = await context.params
     const uid = params.uid
->>>>>>> 639a35c67c930105a6fd7e46e128cda80a2c147d
+    console.log(`PATCH request for UID: ${uid}`)
+
     const body = await req.json()
-    console.log('Request body:', body) 
+    console.log('Request body:', body)
 
     const { data, error } = await supabase
       .from('users')
       .update(body)
       .eq('uid', uid)
-      .select() // Add select to return the updated data
+      .select()
       .single()
 
     if (error) throw error
@@ -51,6 +47,7 @@ export async function PATCH(
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }
+
 
 export async function DELETE(
   req: NextRequest,
