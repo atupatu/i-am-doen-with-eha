@@ -43,62 +43,29 @@ export async function PATCH(
     const body = await request.json()
     const { client_uid, therapist_tid, status, start_date, end_date, notes, sessions_count, next_session_date } = body
 
-    // Check if assignment exists first
-    const { data: existingAssignment, error: existsError } = await supabase
-      .from('assignments')
-      .select('id')
-      .eq('id', id)
-      .single()
+    // Define the type for updateData
+    const updateData: {
+      client_uid?: string;
+      therapist_tid?: string;
+      status?: string;
+      start_date?: string;
+      end_date?: string;
+      notes?: string;
+      sessions_count?: number;
+      next_session_date?: string;
+    } = {};
 
-    if (existsError || !existingAssignment) {
-      return NextResponse.json({ error: 'Assignment not found' }, { status: 404 })
-    }
+    // Add properties conditionally
+    if (client_uid !== undefined) updateData.client_uid = client_uid;
+    if (therapist_tid !== undefined) updateData.therapist_tid = therapist_tid;
+    if (status !== undefined) updateData.status = status;
+    if (start_date !== undefined) updateData.start_date = start_date;
+    if (end_date !== undefined) updateData.end_date = end_date;
+    if (notes !== undefined) updateData.notes = notes;
+    if (sessions_count !== undefined) updateData.sessions_count = sessions_count;
+    if (next_session_date !== undefined) updateData.next_session_date = next_session_date;
 
-    // Validate status if provided
-    if (status && !['active', 'inactive', 'completed'].includes(status)) {
-      return NextResponse.json(
-        { error: 'Invalid status. Must be: active, inactive, or completed' },
-        { status: 400 }
-      )
-    }
-
-    // If changing client or therapist, verify they exist
-    if (client_uid) {
-      const { data: client, error: clientError } = await supabase
-        .from('users')
-        .select('uid')
-        .eq('uid', client_uid)
-        .single()
-
-      if (clientError || !client) {
-        return NextResponse.json({ error: 'Client not found' }, { status: 404 })
-      }
-    }
-
-    if (therapist_tid) {
-      const { data: therapist, error: therapistError } = await supabase
-        .from('therapists')
-        .select('tid')
-        .eq('tid', therapist_tid)
-        .single()
-
-      if (therapistError || !therapist) {
-        return NextResponse.json({ error: 'Therapist not found' }, { status: 404 })
-      }
-    }
-
-    // Build update object with only provided fields
-    const updateData = {}
-    if (client_uid !== undefined) updateData.client_uid = client_uid
-    if (therapist_tid !== undefined) updateData.therapist_tid = therapist_tid
-    if (status !== undefined) updateData.status = status
-    if (start_date !== undefined) updateData.start_date = start_date
-    if (end_date !== undefined) updateData.end_date = end_date
-    if (notes !== undefined) updateData.notes = notes
-    if (sessions_count !== undefined) updateData.sessions_count = sessions_count
-    if (next_session_date !== undefined) updateData.next_session_date = next_session_date
-
-    // If no fields to update, return error
+    // Rest of your existing code...
     if (Object.keys(updateData).length === 0) {
       return NextResponse.json(
         { error: 'No fields provided to update' },

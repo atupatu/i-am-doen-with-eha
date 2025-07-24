@@ -4,10 +4,11 @@ import { supabase } from '@/lib/supabaseClient'
 
 export async function GET(
   req: NextRequest,
-  context: { params: { uid: string } }
+  context: { params: Promise<{ uid: string }> }
 ) {
   try {
-    const uid = context.params.uid
+    const params = await context.params  // Await params first
+    const uid = params.uid
 
     const { data, error } = await supabase
       .from('users')
@@ -22,14 +23,18 @@ export async function GET(
   }
 }
 
-// PATCH — update user
 export async function PATCH(
   req: NextRequest,
-  context: { params: { uid: string } }
+  context: { params: Promise<{ uid: string }> }
 ) {
   try {
+<<<<<<< HEAD
     const uid = context.params.uid
     console.log(`PATCH request for UID: ${uid}`) 
+=======
+    const params = await context.params  // Await params first
+    const uid = params.uid
+>>>>>>> 639a35c67c930105a6fd7e46e128cda80a2c147d
     const body = await req.json()
     console.log('Request body:', body) 
 
@@ -47,16 +52,15 @@ export async function PATCH(
   }
 }
 
-// DELETE — delete user
 export async function DELETE(
   req: NextRequest,
-  context: { params: { uid: string } }
+  context: { params: Promise<{ uid: string }> }
 ) {
   try {
-    const uid = context.params.uid
-
+    const params = await context.params  // Await params first
+    const uid = params.uid
+    
     const { error } = await supabase.from('users').delete().eq('uid', uid)
-
     if (error) throw error
     return NextResponse.json({ message: `User ${uid} deleted` }, { status: 200 })
   } catch (error: any) {
