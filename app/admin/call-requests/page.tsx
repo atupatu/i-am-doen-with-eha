@@ -46,6 +46,8 @@ export default function CallRequestsPage() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [isCallDialogOpen, setIsCallDialogOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [isUpdating, setIsUpdating] = useState<string | null>(null) // Track which user is being updated
+
   const { toast } = useToast()
 
   useEffect(() => {
@@ -55,6 +57,8 @@ export default function CallRequestsPage() {
         const response = await fetch('/api/callreq')
         const data = await response.json()
         if (response.ok) {
+          console.log('Fetched users data:', data.data) // Debug log
+          console.log('First user structure:', data.data[0]) // Debug log
           setUsers(data.data)
         } else {
           throw new Error(data.error || 'Failed to fetch call requests')
@@ -93,29 +97,58 @@ export default function CallRequestsPage() {
   })
 
   const handleCallClick = (user: User) => {
+    console.log('handleCallClick called with user:', user.uid, user.name)
     setSelectedUser(user)
     setIsCallDialogOpen(true)
   }
 
   const markAsCompleted = async (uid: string) => {
+    // Validate uid is not null or empty
+    if (!uid || uid.trim() === '') {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Invalid user ID. Cannot update call request status.",
+      })
+      return
+    }
+
+    console.log('Attempting to update user with UID:', uid) // Debug log
+
     try {
+      setIsUpdating(uid) // Set loading state for this specific user
+      
+      const updateData = {
+        call_request_status: 'completed'
+      }
+
+      console.log('Making PATCH request to:', `/api/users/${uid}`) // Debug log
+      console.log('Request payload:', updateData) // Debug log
+
       const response = await fetch(`/api/users/${uid}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          call_request_status: 'completed'
-        })
+        body: JSON.stringify(updateData)
       })
 
+      console.log('Response status:', response.status) // Debug log
+      console.log('Response ok:', response.ok) // Debug log
+
+      const responseData = await response.json()
+      console.log('Response data:', responseData) // Debug log
+
       if (!response.ok) {
-        throw new Error('Failed to update call request status')
+        throw new Error(responseData.error || 'Failed to update call request status')
       }
 
-      // Update local state
+      // Update local state with the returned data or fallback to optimistic update
       setUsers(users.map(user => 
-        user.uid === uid ? { ...user, call_request_status: 'completed' } : user
+        user.uid === uid ? { 
+          ...user, 
+          call_request_status: 'completed'
+        } : user
       ))
 
       toast({
@@ -123,12 +156,34 @@ export default function CallRequestsPage() {
         description: "Call request marked as completed",
       })
     } catch (error) {
+      console.error('Error updating call request status:', error)
       toast({
         variant: "destructive",
         title: "Error",
         description: error instanceof Error ? error.message : 'Failed to update call request status',
       })
+    } finally {
+      setIsUpdating(null) // Clear loading state
     }
+  }
+
+  const handlePlaceCallAndComplete = async () => {
+    console.log('handlePlaceCallAndComplete called')
+    console.log('selectedUser:', selectedUser)
+    
+    if (!selectedUser?.uid) {
+      console.log('No selectedUser or UID found')
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No user selected or invalid user ID.",
+      })
+      return
+    }
+
+    console.log('About to call markAsCompleted with UID:', selectedUser.uid)
+    await markAsCompleted(selectedUser.uid)
+    setIsCallDialogOpen(false)
   }
 
   return (
@@ -180,16 +235,18 @@ export default function CallRequestsPage() {
           <CardContent className="p-0">
             <Table>
               <TableHeader>
-                <TableHead>Client</TableHead>
-                <TableHead>
-                  <div className="flex items-center">
-                    Request Date
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                  </div>
-                </TableHead>
-                <TableHead>Contact</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableRow>
+                  <TableHead>Client</TableHead>
+                  <TableHead>
+                    <div className="flex items-center">
+                      Request Date
+                      <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </div>
+                  </TableHead>
+                  <TableHead>Contact</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
@@ -205,8 +262,13 @@ export default function CallRequestsPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredUsers.map((user) => (
-                    <TableRow key={user.uid}>
+                  filteredUsers.map((user) => {
+                    console.log('Rendering user:', user) // Debug log
+                    const userId = user.uid || user.id || user.user_id // Try different possible ID fields
+                    console.log('User ID found:', userId) // Debug log
+                    
+                    return (
+                    <TableRow key={userId || `user-${Math.random()}`}>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Avatar className="h-8 w-8">
@@ -256,7 +318,13 @@ export default function CallRequestsPage() {
                                 variant="outline"
                                 size="icon"
                                 className="h-8 w-8 bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800"
-                                onClick={() => handleCallClick(user)}
+                                onClick={(e) => {
+                                  console.log('Call button clicked for user:', userId, user.name)
+                                  e.preventDefault()
+                                  e.stopPropagation()
+                                  handleCallClick(user)
+                                }}
+                                disabled={isUpdating === userId}
                               >
                                 <Phone className="h-4 w-4" />
                                 <span className="sr-only">Call client</span>
@@ -265,9 +333,23 @@ export default function CallRequestsPage() {
                                 variant="outline"
                                 size="icon"
                                 className="h-8 w-8"
-                                onClick={() => markAsCompleted(user.uid)}
+                                onClick={(e) => {
+                                  console.log('Mark complete button clicked for user:', userId, user.name)
+                                  e.preventDefault()
+                                  e.stopPropagation()
+                                  if (userId) {
+                                    markAsCompleted(userId)
+                                  } else {
+                                    console.error('No valid user ID found for user:', user)
+                                  }
+                                }}
+                                disabled={isUpdating === userId}
                               >
-                                <Check className="h-4 w-4" />
+                                {isUpdating === userId ? (
+                                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                                ) : (
+                                  <Check className="h-4 w-4" />
+                                )}
                                 <span className="sr-only">Mark as completed</span>
                               </Button>
                             </>
@@ -275,7 +357,8 @@ export default function CallRequestsPage() {
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))
+                    )
+                  })
                 )}
               </TableBody>
             </Table>
@@ -304,11 +387,8 @@ export default function CallRequestsPage() {
                 <div className="text-center">
                   <h3 className="text-lg font-medium">{selectedUser.name}</h3>
                   <p className="text-sm text-muted-foreground">{selectedUser.phone}</p>
+                  <p className="text-xs text-muted-foreground mt-1">UID: {selectedUser.uid}</p>
                 </div>
-              </div>
-              <div>
-                <Label htmlFor="callNotes">Call Notes</Label>
-                <Textarea id="callNotes" placeholder="Enter notes about the call..." className="mt-1" />
               </div>
             </div>
             <DialogFooter className="gap-2">
@@ -317,12 +397,19 @@ export default function CallRequestsPage() {
               </Button>
               <Button 
                 className="bg-green-600 hover:bg-green-700 gap-2" 
-                onClick={() => {
-                  markAsCompleted(selectedUser.uid)
-                  setIsCallDialogOpen(false)
+                onClick={(e) => {
+                  console.log('Place call button clicked in dialog')
+                  e.preventDefault()
+                  e.stopPropagation()
+                  handlePlaceCallAndComplete()
                 }}
+                disabled={isUpdating === selectedUser.uid}
               >
-                <Phone className="h-4 w-4" />
+                {isUpdating === selectedUser.uid ? (
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                ) : (
+                  <Phone className="h-4 w-4" />
+                )}
                 Place Call & Mark Complete
               </Button>
             </DialogFooter>

@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabaseClient'
 export async function GET(req:NextRequest)
 {
     try{
-        const {error: pendingError, data: pending}= await supabase.from('users').select('name, email, phone, call_request_status')
+        const {error: pendingError, data: pending}= await supabase.from('users').select('name, email, phone, call_request_status,uid')
         .eq('call_request_status', 'pending').order('created_at', { ascending: false })
     
         if (pendingError) {
