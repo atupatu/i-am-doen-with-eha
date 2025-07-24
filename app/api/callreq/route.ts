@@ -13,7 +13,7 @@ export async function GET(req:NextRequest)
 
           const {error: completedError, data:completed}= await supabase.from('users').select('name, email,phone, call_request_status')
           .eq('call_request_status','completed').order('created_at', { ascending: false })
-          .limit(5)
+         
 
           if (completedError) {
             return NextResponse.json({ error: completedError.message }, { status: 500 })

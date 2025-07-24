@@ -29,12 +29,16 @@ export async function PATCH(
 ) {
   try {
     const uid = context.params.uid
+    console.log(`PATCH request for UID: ${uid}`) 
     const body = await req.json()
+    console.log('Request body:', body) 
 
     const { data, error } = await supabase
       .from('users')
       .update(body)
       .eq('uid', uid)
+      .select() // Add select to return the updated data
+      .single()
 
     if (error) throw error
     return NextResponse.json({ message: 'User updated', data }, { status: 200 })
