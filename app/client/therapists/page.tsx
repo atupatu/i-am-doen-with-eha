@@ -1,70 +1,84 @@
 "use client"
-import React, { useState } from "react";
-import Link from "next/link";
-import { Heart } from "lucide-react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import TherapistCard from "@/components/therapist-grid";
 import Navbar from "@/components/navbar";
 import { Search } from 'lucide-react';
 
-
-const therapists = [
-  {
-    id: 1,
-    name: "Dr. Emma Wilson",
-    specialization: "Cognitive Behavioral Therapy",
-    experience: "8 years",
-    image: "/images/emma_wilson.jpg",
-    bio: "Specializes in CBT, helping clients challenge and change unhelpful thoughts and behaviors.",
-    educationalQualification: "Ph.D. in Clinical Psychology, Stanford University",
-    expertise: ["Depression", "Self-esteem issues", "Procrastination"],
-    languagesSpoken: ["English", "Spanish"],
-  },
-  {
-    id: 2,
-    name: "Dr. James Chen",
-    specialization: "Family Therapy",
-    experience: "10 years",
-    image: "/images/james_chen.jpg",
-    bio: "Focuses on resolving family conflicts and improving communication between family members.",
-    educationalQualification: "M.S. in Family Therapy, UCLA",
-    expertise: ["Parent-child relationships", "Divorce mediation", "Grief counseling"],
-    languagesSpoken: ["English", "Mandarin"],
-  },
-  {
-    id: 3,
-    name: "Dr. Marcus Johnson",
-    specialization: "Anxiety Management",
-    experience: "6 years",
-    image: "/images/marcus_johnson.jpg",
-    bio: "Works with clients to manage anxiety through mindfulness, journaling, and breathing techniques.",
-    educationalQualification: "Psy.D. in Clinical Psychology, University of Michigan",
-    expertise: ["Social anxiety", "Panic attacks", "Stress resilience"],
-    languagesSpoken: ["English", "French"],
-  },
-];
+interface Therapist {
+  tid: string;
+  name: string;
+  education: string;
+  bio: string;
+  areas_covered: string; // Now expecting a string
+  image?: string;
+}
 
 export default function TherapistsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
+  const [therapists, setTherapists] = useState<Therapist[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTherapists = async () => {
+      try {
+        const response = await fetch('/api/therapists');
+        const data = await response.json();
+        if (data.therapists) {
+          const formattedTherapists = data.therapists.map((therapist: any) => ({
+            tid: therapist.tid,
+            name: therapist.name,
+            education: therapist.education,
+            bio: therapist.bio,
+            areas_covered: therapist.areas_covered || "", // Keep as string
+            image: "/images/therapist_placeholder.jpg"
+          }));
+          setTherapists(formattedTherapists);
+        }
+      } catch (error) {
+        console.error("Error fetching therapists:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTherapists();
+  }, []);
 
   // Filter therapists based on search query and selected filter
   const filteredTherapists = therapists.filter((therapist) => {
     const matchesSearch =
       therapist.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      therapist.specialization.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      therapist.expertise.some((expert) =>
-        expert.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+      therapist.education?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      therapist.areas_covered?.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesFilter = selectedFilter
-      ? therapist.expertise.some((expert) =>
-          expert.toLowerCase().includes(selectedFilter.toLowerCase())
-        )
+      ? therapist.areas_covered?.toLowerCase().includes(selectedFilter.toLowerCase())
       : true;
 
     return matchesSearch && matchesFilter;
   });
+
+  // Extract unique areas for filter buttons
+  const uniqueAreas = Array.from(
+    new Set(
+      therapists.flatMap(t => 
+        t.areas_covered ? t.areas_covered.split(',').map(area => area.trim()) : []
+      )
+    )
+  ).slice(0, 4);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen flex-col">
+        <Navbar />
+        <main className="flex-1 bg-[#fef6f9]/30">
+          <div className="container py-12 text-center">Loading therapists...</div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -82,7 +96,7 @@ export default function TherapistsPage() {
             <div className="relative">
               <input
                 type="text"
-                placeholder="Search by name, specialty, or expertise..."
+                placeholder="Search by name, education, or areas covered..."
                 className="w-full py-3 px-4 pl-12 rounded-xl border border-gray-300 focus:border-lavender focus:ring focus:ring-lavender/20 focus:outline-none"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -98,43 +112,29 @@ export default function TherapistsPage() {
               className={`rounded-full ${selectedFilter === null ? "border-lavender text-dark-blue-gray" : "border-gray-300 text-dark-blue-gray"} hover:bg-lavender hover:text-white`}
               onClick={() => setSelectedFilter(null)}
             >
-              All Specializations
+              All Areas
             </Button>
-            <Button
-              variant="outline"
-              className={`rounded-full ${selectedFilter === "Anxiety" ? "border-lavender text-dark-blue-gray" : "border-gray-300 text-dark-blue-gray"} hover:border-lavender`}
-              onClick={() => setSelectedFilter("Anxiety")}
-            >
-              Anxiety
-            </Button>
-            <Button
-              variant="outline"
-              className={`rounded-full ${selectedFilter === "Depression" ? "border-lavender text-dark-blue-gray" : "border-gray-300 text-dark-blue-gray"} hover:border-lavender`}
-              onClick={() => setSelectedFilter("Depression")}
-            >
-              Depression
-            </Button>
-            <Button
-              variant="outline"
-              className={`rounded-full ${selectedFilter === "Family Therapy" ? "border-lavender text-dark-blue-gray" : "border-gray-300 text-dark-blue-gray"} hover:border-lavender`}
-              onClick={() => setSelectedFilter("Family Therapy")}
-            >
-              Family Therapy
-            </Button>
-            <Button
-              variant="outline"
-              className={`rounded-full ${selectedFilter === "Grief counseling" ? "border-lavender text-dark-blue-gray" : "border-gray-300 text-dark-blue-gray"} hover:border-lavender`}
-              onClick={() => setSelectedFilter("Grief counseling")}
-            >
-              Grief Counseling
-            </Button>
+            {uniqueAreas.map((area) => (
+              <Button
+                key={area}
+                variant="outline"
+                className={`rounded-full ${selectedFilter === area ? "border-lavender text-dark-blue-gray" : "border-gray-300 text-dark-blue-gray"} hover:border-lavender`}
+                onClick={() => setSelectedFilter(area)}
+              >
+                {area}
+              </Button>
+            ))}
           </div>
 
           {/* Therapist Grid */}
           <div className="space-y-6">
-            {filteredTherapists.map((therapist) => (
-              <TherapistCard key={therapist.id} therapist={therapist} />
-            ))}
+            {filteredTherapists.length > 0 ? (
+              <TherapistCard therapists={filteredTherapists} />
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-gray-600">No therapists found matching your criteria.</p>
+              </div>
+            )}
           </div>
         </div>
       </main>
