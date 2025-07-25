@@ -1,46 +1,360 @@
+// //Main container with state management and API calls
+// "use client"
+
+// import { useState, useEffect } from "react"
+// import { UserPlus } from "lucide-react"
+// import { Button } from "@/components/ui/button"
+// import { User, Therapist, Notification, FormData } from "./types"
+// import ClientTable from "./ClientTable"
+// import ClientModals from "./ClientModals"
+
+// export default function ClientsPage() {
+//   const [clients, setClients] = useState<User[]>([])
+//   const [therapists, setTherapists] = useState<Therapist[]>([])
+//   const [loading, setLoading] = useState(true)
+//   const [error, setError] = useState<string | null>(null)
+//   const [filterStatus, setFilterStatus] = useState("all")
+//   const [searchQuery, setSearchQuery] = useState("")
+//   const [notification, setNotification] = useState<Notification | null>(null)
+  
+//   // Modal states
+//   const [showAddModal, setShowAddModal] = useState(false)
+//   const [showEditModal, setShowEditModal] = useState(false)
+//   const [showDetailsModal, setShowDetailsModal] = useState(false)
+//   const [selectedClient, setSelectedClient] = useState<User | null>(null)
+  
+//   // Form state - removed uid field
+//   const [formData, setFormData] = useState<FormData>({
+//     name: '',
+//     email: '',
+//     phone: '',
+//     assigned_tid: '',
+//     is_active: true,
+//     call_request_status: 'none',
+//     form_response: ''
+//   })
+
+//   // Fetch clients and therapists from API
+//   useEffect(() => {
+//     const fetchData = async () => {
+//       try {
+//         setLoading(true)
+        
+//         const [usersResponse, therapistsResponse] = await Promise.all([
+//           fetch('/api/users'),
+//           fetch('/api/therapists')
+//         ])
+        
+//         if (!usersResponse.ok) {
+//           throw new Error('Failed to fetch clients')
+//         }
+        
+//         if (!therapistsResponse.ok) {
+//           throw new Error('Failed to fetch therapists')
+//         }
+        
+//         const usersData = await usersResponse.json()
+//         const therapistsData = await therapistsResponse.json()
+        
+//         if (usersData.error) {
+//           throw new Error(usersData.error)
+//         }
+        
+//         if (therapistsData.error) {
+//           throw new Error(therapistsData.error)
+//         }
+        
+//         setClients(usersData.users || [])
+//         setTherapists(therapistsData.therapists || therapistsData || [])
+//       } catch (err) {
+//         setError(err instanceof Error ? err.message : 'An error occurred')
+//       } finally {
+//         setLoading(false)
+//       }
+//     }
+
+//     fetchData()
+//   }, [])
+
+//   const showNotification = (message: string, details?: string) => {
+//     setNotification({ message, details })
+//   }
+
+//   const closeNotification = () => {
+//     setNotification(null)
+//   }
+
+//   const resetForm = () => {
+//     setFormData({
+//       name: '',
+//       email: '',
+//       phone: '',
+//       assigned_tid: '',
+//       is_active: true,
+//       call_request_status: 'none',
+//       form_response: ''
+//     })
+//   }
+
+//   const handleDeactivateClient = async (client: User) => {
+//     try {
+//       const response = await fetch(`/api/users/${client.uid}`, {
+//         method: 'PATCH',
+//         headers: {
+//           'Content-Type': 'application/json',
+//         },
+//         body: JSON.stringify({
+//           is_active: false
+//         }),
+//       })
+
+//       const data = await response.json()
+
+//       if (!response.ok) {
+//         throw new Error(data.error || 'Failed to deactivate client')
+//       }
+
+//       setClients(prev => prev.map(c => 
+//         c.uid === client.uid 
+//           ? { ...c, is_active: false }
+//           : c
+//       ))
+      
+//       showNotification('Success', `Client "${client.name}" has been deactivated.`)
+      
+//     } catch (error) {
+//       showNotification('Error', error instanceof Error ? error.message : 'Failed to deactivate client')
+//     }
+//   }
+// const handleAddClient = async () => {
+//   try {
+//     if (!formData.name || !formData.email) {
+//       showNotification('Error', 'Name and Email are required fields.')
+//       return
+//     }
+
+//     // Parse form_response 
+//     let parsedFormResponse = null
+//     try {
+//       parsedFormResponse = formData.form_response ? JSON.parse(formData.form_response) : null
+//     } catch (e) {
+//       showNotification('Error', 'Invalid JSON in form response field.')
+//       return
+//     }
+
+//     // Validate assigned_tid if provided
+//     let validAssignedTid = null
+//     if (formData.assigned_tid && formData.assigned_tid.trim() !== '') {
+//       const trimmedTid = formData.assigned_tid.trim()
+      
+//       // Check if it's a valid UUID format (more strict validation)
+//       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+      
+//       if (uuidRegex.test(trimmedTid)) {
+//         validAssignedTid = trimmedTid
+//       } else {
+//         showNotification('Error', `Invalid therapist ID format: "${trimmedTid}". Please select a valid therapist from the dropdown.`)
+//         return
+//       }
+//     }
+
+//     const requestBody = {
+//       name: formData.name,
+//       email: formData.email,
+//       phone: formData.phone || null,
+//       assigned_tid: validAssignedTid, // This will be null or a valid UUID
+//       is_active: formData.is_active,
+//       call_request_status: formData.call_request_status,
+//       form_response: parsedFormResponse ? JSON.stringify(parsedFormResponse) : null
+//     }
+
+//     console.log('Sending request with body:', requestBody) // Debug log
+
+//     const response = await fetch('/api/admin/clients', {
+//       method: 'POST',
+//       headers: {
+//         'Content-Type': 'application/json',
+//       },
+//       body: JSON.stringify(requestBody),
+//     })
+
+//     const data = await response.json()
+
+//     if (!response.ok) {
+//       throw new Error(data.error || 'Failed to create client')
+//     }
+
+//     setClients(prev => [...prev, data.user])
+//     setShowAddModal(false)
+//     resetForm()
+//     showNotification('Success', `Client "${formData.name}" has been created successfully.`)
+
+//   } catch (error) {
+//     console.error('Error creating client:', error) // Debug log
+//     showNotification('Error', error instanceof Error ? error.message : 'Failed to create client')
+//   }
+// }
+
+//   const handleEditClient = async () => {
+//     try {
+//       if (!selectedClient || !formData.name || !formData.email) {
+//         showNotification('Error', 'Name and Email are required fields.')
+//         return
+//       }
+
+//       let parsedFormResponse = null
+//       try {
+//         parsedFormResponse = formData.form_response ? JSON.parse(formData.form_response) : {}
+//       } catch (e) {
+//         parsedFormResponse = {}
+//       }
+
+//       const response = await fetch(`/api/users/${selectedClient.uid}`, {
+//         method: 'PATCH',
+//         headers: {
+//           'Content-Type': 'application/json',
+//         },
+//         body: JSON.stringify({
+//           name: formData.name,
+//           email: formData.email,
+//           phone: formData.phone,
+//           assigned_tid: formData.assigned_tid || null,
+//           is_active: formData.is_active,
+//           call_request_status: formData.call_request_status,
+//           form_response: parsedFormResponse
+//         }),
+//       })
+
+//       const data = await response.json()
+
+//       if (!response.ok) {
+//         throw new Error(data.error || 'Failed to update client')
+//       }
+
+//       setClients(prev => prev.map(client => 
+//         client.uid === selectedClient.uid 
+//           ? { ...client, ...formData, assigned_tid: formData.assigned_tid || null, form_response: parsedFormResponse }
+//           : client
+//       ))
+      
+//       setShowEditModal(false)
+//       setSelectedClient(null)
+//       resetForm()
+//       showNotification('Success', `Client "${formData.name}" has been updated successfully.`)
+      
+//     } catch (error) {
+//       showNotification('Error', error instanceof Error ? error.message : 'Failed to update client')
+//     }
+//   }
+
+//   const openAddModal = () => {
+//     resetForm()
+//     setShowAddModal(true)
+//   }
+
+//   const openEditModal = (client: User) => {
+//     setSelectedClient(client)
+//     setFormData({
+//       name: client.name || '',
+//       email: client.email || '',
+//       phone: client.phone || '',
+//       assigned_tid: client.assigned_tid || '',
+//       is_active: client.is_active,
+//       call_request_status: client.call_request_status || 'none',
+//       form_response: client.form_response ? JSON.stringify(client.form_response, null, 2) : ''
+//     })
+//     setShowEditModal(true)
+//   }
+
+//   const openDetailsModal = (client: User) => {
+//     setSelectedClient(client)
+//     setShowDetailsModal(true)
+//   }
+
+//   if (loading) {
+//     return (
+//       <div className="h-full flex flex-col">
+//         <div className="flex-1 flex items-center justify-center">
+//           <div className="text-center">
+//             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#a98cc8] mb-4"></div>
+//             <p>Loading clients...</p>
+//           </div>
+//         </div>
+//       </div>
+//     )
+//   }
+
+//   if (error) {
+//     return (
+//       <div className="h-full flex flex-col">
+//         <div className="flex-1 flex items-center justify-center">
+//           <div className="text-center">
+//             <p className="text-red-600 mb-4">Error: {error}</p>
+//             <Button onClick={() => window.location.reload()}>
+//               Try Again
+//             </Button>
+//           </div>
+//         </div>
+//       </div>
+//     )
+//   }
+
+//   return (
+//     <div className="h-full flex flex-col">
+//       <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+//         <div className="flex items-center justify-between">
+//           <h2 className="text-3xl font-bold tracking-tight">Client Management</h2>
+//           <Button onClick={openAddModal} className="bg-[#a98cc8] hover:bg-[#9678b4]">
+//             <UserPlus className="mr-2 h-4 w-4" />
+//             Add New Client
+//           </Button>
+//         </div>
+
+//         <ClientTable
+//           clients={clients}
+//           therapists={therapists}
+//           filterStatus={filterStatus}
+//           setFilterStatus={setFilterStatus}
+//           searchQuery={searchQuery}
+//           setSearchQuery={setSearchQuery}
+//           onViewDetails={openDetailsModal}
+//           onEditClient={openEditModal}
+//           onDeactivateClient={handleDeactivateClient}
+//         />
+//       </div>
+
+//       <ClientModals
+//         showAddModal={showAddModal}
+//         setShowAddModal={setShowAddModal}
+//         showEditModal={showEditModal}
+//         setShowEditModal={setShowEditModal}
+//         showDetailsModal={showDetailsModal}
+//         setShowDetailsModal={setShowDetailsModal}
+//         selectedClient={selectedClient}
+//         setSelectedClient={setSelectedClient}
+//         therapists={therapists}
+//         formData={formData}
+//         setFormData={setFormData}
+//         handleAddClient={handleAddClient}
+//         handleEditClient={handleEditClient}
+//         openEditModal={openEditModal}
+//         resetForm={resetForm}
+//         notification={notification}
+//         closeNotification={closeNotification}
+//       />
+//     </div>
+//   )
+// }
+
+//Main container with state management and API calls (Updated - No Therapist Assignment)
 "use client"
 
 import { useState, useEffect } from "react"
-import { ArrowUpDown, ChevronDown, Download, Filter, MoreHorizontal, Search, UserPlus } from "lucide-react"
-import { AdminHeader } from "@/components/admin/header"
+import { UserPlus } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-
-// Type definitions based on your schema
-interface User {
-  uid: string
-  name: string | null
-  email: string | null
-  phone: string | null
-  form_response: any | null
-  assigned_tid: string | null
-  created_at: string | null
-  is_active: boolean
-  call_request_status: 'pending' | 'completed' | 'none' | null
-}
-
-interface Therapist {
-  tid: string
-  name: string
-  email: string
-  info: string | null
-  availability_hours: number | null
-  created_at: string | null
-  user_id: string | null
-}
+import { User, Therapist, Notification, FormData } from "./types"
+import ClientTable from "./ClientTable"
+import ClientModals from "./ClientModals"
 
 export default function ClientsPage() {
   const [clients, setClients] = useState<User[]>([])
@@ -49,6 +363,23 @@ export default function ClientsPage() {
   const [error, setError] = useState<string | null>(null)
   const [filterStatus, setFilterStatus] = useState("all")
   const [searchQuery, setSearchQuery] = useState("")
+  const [notification, setNotification] = useState<Notification | null>(null)
+  
+  // Modal states
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [showDetailsModal, setShowDetailsModal] = useState(false)
+  const [selectedClient, setSelectedClient] = useState<User | null>(null)
+  
+  // Form state - removed assigned_tid field
+  const [formData, setFormData] = useState<FormData>({
+    name: '',
+    email: '',
+    phone: '',
+    is_active: true,
+    call_request_status: 'none',
+    form_response: ''
+  })
 
   // Fetch clients and therapists from API
   useEffect(() => {
@@ -56,7 +387,6 @@ export default function ClientsPage() {
       try {
         setLoading(true)
         
-        // Fetch both users and therapists in parallel
         const [usersResponse, therapistsResponse] = await Promise.all([
           fetch('/api/users'),
           fetch('/api/therapists')
@@ -82,7 +412,7 @@ export default function ClientsPage() {
         }
         
         setClients(usersData.users || [])
-        setTherapists(therapistsData.therapists || therapistsData || []) // Handle different response formats
+        setTherapists(therapistsData.therapists || therapistsData || [])
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred')
       } finally {
@@ -93,80 +423,205 @@ export default function ClientsPage() {
     fetchData()
   }, [])
 
-  const filteredClients = clients.filter((client) => {
-    // Filter by status (using is_active field)
-    if (filterStatus === "active" && !client.is_active) {
-      return false
-    }
-    if (filterStatus === "inactive" && client.is_active) {
-      return false
-    }
-
-    // Filter by search query
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase()
-      return (
-        (client.name?.toLowerCase().includes(query)) ||
-        (client.email?.toLowerCase().includes(query)) ||
-        client.uid.toLowerCase().includes(query)
-      )
-    }
-
-    return true
-  })
-
-  // Helper function to get therapist name by tid
-  const getTherapistName = (tid: string | null) => {
-    if (!tid) return 'Unassigned'
-    const therapist = therapists.find(t => t.tid === tid)
-    return therapist ? therapist.name : 'Unknown Therapist'
+  const showNotification = (message: string, details?: string) => {
+    setNotification({ message, details })
   }
 
-  // Helper function to format date
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return 'N/A'
-    return new Date(dateString).toLocaleDateString()
+  const closeNotification = () => {
+    setNotification(null)
   }
 
-  // Helper function to get initials
-  const getInitials = (name: string | null) => {
-    if (!name) return 'U'
-    return name
-      .split(' ')
-      .map(n => n[0])
-      .join('')
-      .toUpperCase()
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      email: '',
+      phone: '',
+      is_active: true,
+      call_request_status: 'none',
+      form_response: ''
+    })
   }
 
-  // Helper function to get status badge
-  const getStatusBadge = (isActive: boolean, callStatus: string | null) => {
-    if (!isActive) {
-      return (
-        <Badge variant="secondary">
-          Inactive
-        </Badge>
-      )
+  const handleDeactivateClient = async (client: User) => {
+    try {
+      const response = await fetch(`/api/users/${client.uid}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          is_active: false
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to deactivate client')
+      }
+
+      setClients(prev => prev.map(c => 
+        c.uid === client.uid 
+          ? { ...c, is_active: false }
+          : c
+      ))
+      
+      showNotification('Success', `Client "${client.name}" has been deactivated.`)
+      
+    } catch (error) {
+      showNotification('Error', error instanceof Error ? error.message : 'Failed to deactivate client')
     }
-    
-    if (callStatus === 'pending') {
-      return (
-        <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">
-          Call Pending
-        </Badge>
-      )
+  }
+
+const handleAddClient = async () => {
+  try {
+    console.log('=== FRONTEND REQUEST START ===');
+    console.log('Initial formData:', formData);
+
+    if (!formData.name || !formData.email) {
+      showNotification('Error', 'Name and Email are required fields.');
+      return;
     }
 
-    return (
-      <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
-        Active
-      </Badge>
-    )
+    // Parse form_response 
+    let parsedFormResponse = null;
+    try {
+      parsedFormResponse = formData.form_response ? JSON.parse(formData.form_response) : null;
+      console.log('Parsed form response:', parsedFormResponse);
+    } catch (e) {
+      console.error('JSON parse error:', e);
+      showNotification('Error', 'Invalid JSON in form response field.');
+      return;
+    }
+
+    const requestBody = {
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone || null,
+      assigned_tid: null, // Always null - no therapist assignment
+      is_active: formData.is_active,
+      call_request_status: formData.call_request_status,
+      form_response: parsedFormResponse ? JSON.stringify(parsedFormResponse) : null
+    };
+
+    console.log('Request body to send:', requestBody);
+    console.log('Request body JSON:', JSON.stringify(requestBody, null, 2));
+
+    console.log('Making fetch request...');
+    const response = await fetch('/api/admin/clients', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    console.log('Response received:');
+    console.log('- status:', response.status);
+    console.log('- statusText:', response.statusText);
+    console.log('- ok:', response.ok);
+
+    const data = await response.json();
+    console.log('Response data:', data);
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to create client');
+    }
+
+    setClients(prev => [...prev, data.user]);
+    setShowAddModal(false);
+    resetForm();
+    showNotification('Success', `Client "${formData.name}" has been created successfully.`);
+
+    console.log('=== FRONTEND REQUEST SUCCESS ===');
+
+  } catch (error) {
+    console.error('=== FRONTEND REQUEST ERROR ===');
+    console.error('Error type:', error.constructor.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    showNotification('Error', error instanceof Error ? error.message : 'Failed to create client');
+  }
+};
+
+  const handleEditClient = async () => {
+    try {
+      if (!selectedClient || !formData.name || !formData.email) {
+        showNotification('Error', 'Name and Email are required fields.')
+        return
+      }
+
+      let parsedFormResponse = null
+      try {
+        parsedFormResponse = formData.form_response ? JSON.parse(formData.form_response) : {}
+      } catch (e) {
+        parsedFormResponse = {}
+      }
+
+      const response = await fetch(`/api/users/${selectedClient.uid}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          assigned_tid: null, // Always null - no therapist assignment
+          is_active: formData.is_active,
+          call_request_status: formData.call_request_status,
+          form_response: parsedFormResponse
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update client')
+      }
+
+      setClients(prev => prev.map(client => 
+        client.uid === selectedClient.uid 
+          ? { ...client, ...formData, assigned_tid: null, form_response: parsedFormResponse }
+          : client
+      ))
+      
+      setShowEditModal(false)
+      setSelectedClient(null)
+      resetForm()
+      showNotification('Success', `Client "${formData.name}" has been updated successfully.`)
+      
+    } catch (error) {
+      showNotification('Error', error instanceof Error ? error.message : 'Failed to update client')
+    }
+  }
+
+  const openAddModal = () => {
+    resetForm()
+    setShowAddModal(true)
+  }
+
+  const openEditModal = (client: User) => {
+    setSelectedClient(client)
+    setFormData({
+      name: client.name || '',
+      email: client.email || '',
+      phone: client.phone || '',
+      is_active: client.is_active,
+      call_request_status: client.call_request_status || 'none',
+      form_response: client.form_response ? JSON.stringify(client.form_response, null, 2) : ''
+    })
+    setShowEditModal(true)
+  }
+
+  const openDetailsModal = (client: User) => {
+    setSelectedClient(client)
+    setShowDetailsModal(true)
   }
 
   if (loading) {
     return (
       <div className="h-full flex flex-col">
-        <AdminHeader title="Client Management" />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#a98cc8] mb-4"></div>
@@ -180,7 +635,6 @@ export default function ClientsPage() {
   if (error) {
     return (
       <div className="h-full flex flex-col">
-        <AdminHeader title="Client Management" />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <p className="text-red-600 mb-4">Error: {error}</p>
@@ -195,169 +649,47 @@ export default function ClientsPage() {
 
   return (
     <div className="h-full flex flex-col">
-      <AdminHeader title="Client Management" />
       <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-3xl font-bold tracking-tight">Clients</h2>
-          <Button className="bg-[#a98cc8] hover:bg-[#9678b4]">
+          <h2 className="text-3xl font-bold tracking-tight">Client Management</h2>
+          <Button onClick={openAddModal} className="bg-[#a98cc8] hover:bg-[#9678b4]">
             <UserPlus className="mr-2 h-4 w-4" />
             Add New Client
           </Button>
         </div>
 
-        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-          <div className="flex w-full md:w-auto items-center gap-2">
-            <div className="relative w-full md:w-[300px]">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search clients..."
-                className="pl-8"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="gap-1">
-                  <Filter className="h-4 w-4" />
-                  Filter
-                  <ChevronDown className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-[200px]">
-                <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setFilterStatus("all")}>All Clients</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setFilterStatus("active")}>Active Clients</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setFilterStatus("inactive")}>Inactive Clients</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Button variant="outline" className="gap-1">
-              <Download className="h-4 w-4" />
-              Export
-            </Button>
-          </div>
-          <div className="flex items-center gap-2 w-full md:w-auto">
-            <Select defaultValue="10">
-              <SelectTrigger className="w-[80px]">
-                <SelectValue placeholder="10" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="10">10</SelectItem>
-                <SelectItem value="20">20</SelectItem>
-                <SelectItem value="50">50</SelectItem>
-                <SelectItem value="100">100</SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-sm text-muted-foreground">Entries per page</p>
-          </div>
-        </div>
-
-        <Card>
-          <CardHeader className="p-4 pb-2">
-            <CardTitle>Client List</CardTitle>
-            <CardDescription>
-              Showing {filteredClients.length} of {clients.length} clients
-              {filterStatus !== "all" && ` (${filterStatus} only)`}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[100px]">Client ID</TableHead>
-                  <TableHead>Client</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Therapist</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Call Status</TableHead>
-                  <TableHead>Joined Date</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredClients.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                      No clients found matching your criteria
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredClients.map((client) => (
-                    <TableRow key={client.uid}>
-                      <TableCell className="font-mono text-xs">
-                        {client.uid.substring(0, 8)}...
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage src={`/placeholder.svg?height=32&width=32`} alt={client.name || 'User'} />
-                            <AvatarFallback>
-                              {getInitials(client.name)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <div className="font-medium">{client.name || 'No name provided'}</div>
-                            <div className="text-sm text-muted-foreground">{client.email || 'No email provided'}</div>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {getStatusBadge(client.is_active, client.call_request_status)}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <div className="h-2 w-2 rounded-full bg-blue-500"></div>
-                          <span className="text-sm">
-                            {getTherapistName(client.assigned_tid)}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>{client.phone || 'N/A'}</TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant={
-                            client.call_request_status === 'pending' ? 'default' :
-                            client.call_request_status === 'completed' ? 'secondary' : 
-                            'outline'
-                          }
-                        >
-                          {client.call_request_status || 'none'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{formatDate(client.created_at)}</TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <span className="sr-only">Open menu</span>
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem>View details</DropdownMenuItem>
-                            <DropdownMenuItem>Edit client</DropdownMenuItem>
-                            <DropdownMenuItem>View form response</DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem>Assign therapist</DropdownMenuItem>
-                            <DropdownMenuItem>Update call status</DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-red-600">
-                              {client.is_active ? 'Deactivate' : 'Activate'}
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+        <ClientTable
+          clients={clients}
+          therapists={therapists}
+          filterStatus={filterStatus}
+          setFilterStatus={setFilterStatus}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          onViewDetails={openDetailsModal}
+          onEditClient={openEditModal}
+          onDeactivateClient={handleDeactivateClient}
+        />
       </div>
+
+      <ClientModals
+        showAddModal={showAddModal}
+        setShowAddModal={setShowAddModal}
+        showEditModal={showEditModal}
+        setShowEditModal={setShowEditModal}
+        showDetailsModal={showDetailsModal}
+        setShowDetailsModal={setShowDetailsModal}
+        selectedClient={selectedClient}
+        setSelectedClient={setSelectedClient}
+        therapists={therapists}
+        formData={formData}
+        setFormData={setFormData}
+        handleAddClient={handleAddClient}
+        handleEditClient={handleEditClient}
+        openEditModal={openEditModal}
+        resetForm={resetForm}
+        notification={notification}
+        closeNotification={closeNotification}
+      />
     </div>
   )
 }
