@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabaseClient'
 export async function GET(req:NextRequest)
 {
     try{
-        const {error: pendingError, data: pending}= await supabase.from('users').select('name, email, phone, call_request_status')
+        const {error: pendingError, data: pending}= await supabase.from('users').select('name, email, phone, call_request_status,uid')
         .eq('call_request_status', 'pending').order('created_at', { ascending: false })
     
         if (pendingError) {
@@ -13,7 +13,7 @@ export async function GET(req:NextRequest)
 
           const {error: completedError, data:completed}= await supabase.from('users').select('name, email,phone, call_request_status')
           .eq('call_request_status','completed').order('created_at', { ascending: false })
-          .limit(5)
+         
 
           if (completedError) {
             return NextResponse.json({ error: completedError.message }, { status: 500 })
