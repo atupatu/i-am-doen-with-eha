@@ -8,33 +8,27 @@ import { Button } from "@/components/ui/button"
 const testimonials = [
   {
     content: "Working with my therapist has been transformative.",
-    author: "Sarah a.",
+    author: "Sarah A.",
     role: "Client for 8 months",
-    image: "https://images.unsplash.com/photo-1581579438747-99ee7e39571d?q=80&w=2940&auto=format&fit=crop",
+    image: "/testimonial2.jpg",
   },
   {
     content: "The support I've received here has helped me rediscover joy in my life.",
     author: "Michael T.",
     role: "Client for 1 year",
-    image: "https://images.unsplash.com/photo-1566616213894-2d4e1baee5d8?q=80&w=2071&auto=format&fit=crop",
+    image: "/testimonial1.jpg",
   },
   {
     content: "The compassion and expertise of my therapist made all the difference.",
     author: "Elena R.",
     role: "Client for 6 months",
-    image: "https://images.unsplash.com/photo-1593614201641-6f68ed4831c8?q=80&w=2787&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1566616213894-2d4e1baee5d8?q=80&w=2071&auto=format&fit=crop",
   },
   {
     content: "Working with my therapist has been transformative.",
-    author: "Sarah b.",
+    author: "Maria G.",
     role: "Client for 8 months",
-    image: "https://images.unsplash.com/photo-1581579438747-99ee7e39571d?q=80&w=2940&auto=format&fit=crop",
-  },
-  {
-    content: "Working with my therapist has been transformative.",
-    author: "Sarah .",
-    role: "Client for 8 months",
-    image: "https://images.unsplash.com/photo-1581579438747-99ee7e39571d?q=80&w=2940&auto=format&fit=crop",
+    image: "/testimonial3.jpg",
   },
 ]
 

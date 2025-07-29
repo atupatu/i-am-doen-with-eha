@@ -91,7 +91,7 @@ export async function PATCH(
       .select(`
         *,
         client:users!fk_assignment_client(uid, name, email),
-        therapist:therapist:therapists!fk_assignment_therapist(tid, name)
+        therapist:therapists!fk_assignment_therapist(tid, name)
       `)
       .single()
 
@@ -129,16 +129,16 @@ export async function PATCH(
     }
 
     // Handle status changes - if assignment is ended/cancelled, clear assigned_tid
-    if (status && (status === 'ended' || status === 'cancelled' || status === 'inactive')) {
-      const { error: userClearError } = await supabase
-        .from('users')
-        .update({ assigned_tid: null })
-        .eq('uid', finalClientUid)
+    // if (status && (status === 'ended' || status === 'cancelled' || status === 'inactive')) {
+    //   const { error: userClearError } = await supabase
+    //     .from('users')
+    //     .update({ assigned_tid: null })
+    //     .eq('uid', finalClientUid)
 
-      if (userClearError) {
-        console.error('Failed to clear user assigned_tid:', userClearError.message)
-      }
-    }
+    //   if (userClearError) {
+    //     console.error('Failed to clear user assigned_tid:', userClearError.message)
+    //   }
+    // }
 
     return NextResponse.json({ 
       message: 'Assignment updated successfully',
@@ -181,14 +181,14 @@ export async function DELETE(
     }
 
     // Clear the user's assigned_tid
-    const { error: userUpdateError } = await supabase
-      .from('users')
-      .update({ assigned_tid: null })
-      .eq('uid', assignment.client_uid)
+    // const { error: userUpdateError } = await supabase
+    //   .from('users')
+    //   .update({ assigned_tid: null })
+    //   .eq('uid', assignment.client_uid)
 
-    if (userUpdateError) {
-      console.error('Failed to clear user assigned_tid:', userUpdateError.message)
-    }
+    // if (userUpdateError) {
+    //   console.error('Failed to clear user assigned_tid:', userUpdateError.message)
+    // }
 
     return NextResponse.json({ message: 'Assignment deleted successfully' })
   } catch (error) {

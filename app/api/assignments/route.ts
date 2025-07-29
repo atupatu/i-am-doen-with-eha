@@ -82,17 +82,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: insertError.message }, { status: 500 })
     }
 
-    // Update user's assigned_tid field
-    const { error: userUpdateError } = await supabase
-      .from('users')
-      .update({ assigned_tid: therapist_tid })
-      .eq('uid', client_uid)
+    // // Update user's assigned_tid field
+    // const { error: userUpdateError } = await supabase
+    //   .from('users')
+    //   .update({ assigned_tid: therapist_tid })
+    //   .eq('uid', client_uid)
 
-    if (userUpdateError) {
-      // Log the error but don't fail the assignment creation
-      console.error('Failed to update user assigned_tid:', userUpdateError.message)
-      // Optionally, you could rollback the assignment creation here
-    }
+    // if (userUpdateError) {
+    //   // Log the error but don't fail the assignment creation
+    //   console.error('Failed to update user assigned_tid:', userUpdateError.message)
+    //   // Optionally, you could rollback the assignment creation here
+    // }
 
     return NextResponse.json({ 
       message: 'Assignment created successfully',

@@ -1,7 +1,7 @@
 "use client"
 import Link from "next/link"
 import Image from "next/image"
-import { useRef } from "react"
+import { useRef, useEffect, useState } from "react" // ⬅️ Added useEffect & useState
 import { ArrowRight, Calendar, Heart, Star } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import TestimonialCarousel from "@/components/testimonial-carousel"
@@ -11,9 +11,26 @@ import HowItWorks from "@/components/how-it-works"
 import { Clock } from "lucide-react";
 import StatCard from "@/components/stat-card"
 import SiteFooter from "@/components/site-footer"
+import { supabase } from "@/lib/supabaseClient" // ⬅️ Add Supabase client import
 
 export default function Home() {
+  const [therapists, setTherapists] = useState([]) // ⬅️ Add state for therapists
   const scheduleRef = useRef(null)
+
+  // ⬅️ Add useEffect to fetch therapists data
+  useEffect(() => {
+    const fetchTherapists = async () => {
+      const { data, error } = await supabase.from("therapists").select("*")
+      
+      if (error) {
+        console.error("Error fetching therapists:", error)
+      } else {
+        setTherapists(data || [])
+      }
+    }
+
+    fetchTherapists()
+  }, [])
 
   const handleScrollToSchedule = () => {
     if (scheduleRef.current) {
@@ -119,9 +136,10 @@ export default function Home() {
                 Our team of licensed professionals is here to provide personalized care tailored to your unique needs.
               </p>
             </div>
-            <TherapistGrid />
+            <TherapistGrid therapists={therapists.slice(0, 4)} />
+
             <div className="mt-12 text-center">
-              <Link href="/therapists">
+              <Link href="/client/therapists">
                 <Button className="bg-[#a98cc8] hover:bg-[#9678b4] text-white px-8 rounded-xl">
                   View All Therapists <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
@@ -192,4 +210,4 @@ export default function Home() {
       <SiteFooter />
     </div>
   )
-} 
+}

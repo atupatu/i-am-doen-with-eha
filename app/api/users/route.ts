@@ -1,18 +1,50 @@
 import { NextRequest, NextResponse } from 'next/server'
-import {supabase} from '@/lib/supabaseClient'
+import { supabase } from '@/lib/supabaseClient'
 
-export async function GET(req: NextRequest){
-
-    try{
-
-        const {data, error}= await supabase.from('users').select('*')
-
-        if (error) throw error
-        return NextResponse.json({ users: data })
-    }catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 })
-      }
-
+export async function GET(req: NextRequest) {
+  try {
+    console.log('Fetching users with role filter...')
+    
+    // Step 1: Get all user_ids with 'user' role from user_roles table
+    const { data: roleData, error: roleError } = await supabase
+      .from('user_roles')
+      .select('user_id')
+      .eq('role', 'user')
+    
+    console.log('Role data:', { roleData, roleError })
+    
+    if (roleError) {
+      console.error('Role query error:', roleError)
+      throw roleError
+    }
+    
+    if (!roleData || roleData.length === 0) {
+      console.log('No users found with role "user"')
+      return NextResponse.json({ users: [] })
+    }
+    
+    // Extract the user IDs
+    const userIds = roleData.map(item => item.user_id)
+    console.log('User IDs with "user" role:', userIds)
+    
+    // Step 2: Get users from your custom users table where uid matches these user_ids
+    const { data: usersData, error: usersError } = await supabase
+      .from('users')
+      .select('*')
+      .in('uid', userIds)
+    
+    console.log('Users data:', { usersData, usersError })
+    
+    if (usersError) {
+      console.error('Users query error:', usersError)
+      throw usersError
+    }
+    
+    return NextResponse.json({ users: usersData || [] })
+  } catch (error: any) {
+    console.error('API Error:', error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
 }
 
 export async function POST(req: NextRequest) {

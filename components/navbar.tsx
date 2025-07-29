@@ -53,7 +53,7 @@ export default function Navbar() {
         <nav className="hidden md:flex gap-6">
           {navLink("/", "Home")}
           {navLink("/client/therapists", "Therapists")}
-          {navLink("/client//info", "Info")}
+          {navLink("/client/info", "Info")}
           {navLink("/client/schedule", "Schedule")}
         </nav>
         <div className="flex items-center gap-4">

@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import Image from "next/image"
-import { Heart, Brain, Users, Sparkles, ArrowRight } from "lucide-react"
+import { Heart, Brain, Users, Sparkles, ArrowRight, ChevronDown, ChevronUp  } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Navbar from "@/components/navbar";
 import SiteFooter from "@/components/site-footer";
@@ -21,6 +21,44 @@ export default function InfoPage() {
   const [packages, setPackages] = useState<Package[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+
+  const toggleFaq = (index: number) => {
+    setOpenFaqIndex(openFaqIndex === index ? null : index);
+  };
+
+  const dementiaFaqs = [
+    {
+      question: "What program features do you offer for dementia care?",
+      answer: (
+        <ul className="list-disc pl-5 space-y-2">
+          <li>Free initial occupational profiling assessment that will aid in creating the support plan</li>
+          <li>Free assessment on the improvement in the 'Quality of Life' parameters</li>
+        </ul>
+      )
+    },
+    {
+      question: "What activities are included in the sessions?",
+      answer: "Our sessions include cognitive activities, Art Therapy, Music and reminiscence therapy."
+    },
+    {
+      question: "How do you track progress?",
+      answer: (
+        <div>
+          <p className="mb-2">Post each session, the facilitator does an assessment on EHA parameters to track changes and positive behavior observed in dementia patients. The two parameters used are:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Engagement of the patient during the session</li>
+            <li>Mood of the patient before and after the session</li>
+          </ul>
+          <p className="mt-2">Monthly reports are generated based on this assessment and include information on the session activities.</p>
+        </div>
+      )
+    },
+    {
+      question: "How do you assess Quality of Life improvements?",
+      answer: "A longer-term therapy provided through various activities can create better impact on day-to-day life of the patient. We conduct assessments to check improvement in 'Well-being' and 'Quality of Life' for the elderly."
+    }
+  ];
 
   // Fetch packages from API
   useEffect(() => {
@@ -54,7 +92,7 @@ export default function InfoPage() {
             <div className="text-center max-w-3xl mx-auto mb-16">
               <h1 className="text-4xl font-bold mb-6 text-gray-800">Our Therapy Packages</h1>
               <p className="text-lg text-gray-600">
-                At MindfulCare, we offer a variety of evidence-based therapeutic packages tailored to your unique
+                At Echoing Healthy Aging, we offer a variety of evidence-based therapeutic packages tailored to your unique
                 needs and goals.
               </p>
             </div>
@@ -141,7 +179,7 @@ export default function InfoPage() {
               <div>
                 <h2 className="text-3xl font-bold mb-6 text-gray-800">Our Approach to Mental Wellness</h2>
                 <p className="text-gray-600 mb-6">
-                  At MindfulCare, we believe in a holistic approach to mental health. We understand that each person's
+                  At Echoing Healthy Aging, we believe in a holistic approach to mental health. We understand that each person's
                   journey is unique, and we tailor our therapeutic approaches to meet your specific needs.
                 </p>
                 <ul className="space-y-4">
@@ -195,8 +233,103 @@ export default function InfoPage() {
             </div>
           </div>
         </section>
+        
+        <section className="bg-[#fef6f9] py-16 md:py-24">
+          <div className="container">
+            <div className="text-center max-w-3xl mx-auto mb-16">
+              <h1 className="text-4xl font-bold mb-6 text-gray-800">Our Therapeutic Approaches</h1>
+              <p className="text-lg text-gray-600">
+                At Echoing Healthy Aging, we offer a variety of evidence-based therapeutic approaches tailored to your unique
+                needs and goals.
+              </p>
+            </div>
 
-        <section className="py-16 bg-white">
+            <div className="grid gap-8 md:grid-cols-3">
+              <div className="bg-white p-8 rounded-3xl shadow-lg transition-transform duration-300 hover:-translate-y-2">
+                <div className="bg-[#f4c9c8]/30 p-4 rounded-full inline-block mb-6">
+                  <Brain className="h-8 w-8 text-[#a98cc8]" />
+                </div>
+                <h2 className="text-2xl font-bold mb-4 text-gray-800">Stuck in a Thought Loop?</h2>
+                <p className="text-gray-600 mb-6">
+                  Cognitive Behavioral Therapy (CBT) helps you break free from negative thoughts that affect your mood and actions.
+                  It's a practical way to feel better, especially if you're dealing with anxiety, stress, or depression.
+                </p>
+
+                <Link href="#" className="text-[#a98cc8] font-medium flex items-center hover:underline">
+                  Learn more <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </div>
+
+              <div className="bg-white p-8 rounded-3xl shadow-lg transition-transform duration-300 hover:-translate-y-2">
+                <div className="bg-[#f4c9c8]/30 p-4 rounded-full inline-block mb-6">
+                  <Users className="h-8 w-8 text-[#a98cc8]" />
+                </div>
+                <h2 className="text-2xl font-bold mb-4 text-gray-800">Feeling Lonely or Left Out?</h2>
+                <p className="text-gray-600 mb-6">
+                  Companionship therapy is about building real, meaningful connections. It gives you someone to talk to, lean on,
+                  and share moments with—especially helpful during big life changes or when you're feeling isolated.
+                </p>
+
+                <Link href="#" className="text-[#a98cc8] font-medium flex items-center hover:underline">
+                  Learn more <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </div>
+
+              <div className="bg-white p-8 rounded-3xl shadow-lg transition-transform duration-300 hover:-translate-y-2">
+                <div className="bg-[#f4c9c8]/30 p-4 rounded-full inline-block mb-6">
+                  <Sparkles className="h-8 w-8 text-[#a98cc8]" />
+                </div>
+                <h2 className="text-2xl font-bold mb-4 text-gray-800">Looking to Stay Sharp?</h2>
+                <p className="text-gray-600 mb-6">
+                  This therapy involves fun and engaging activities that boost memory and thinking skills. It's ideal for those
+                  facing memory challenges or simply looking to stay mentally active and energized.
+                </p>
+
+                <Link href="#" className="text-[#a98cc8] font-medium flex items-center hover:underline">
+                  Learn more <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Dementia Care FAQ Section */}
+        <section className="py-16 bg-[#fef6f9]">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 className="text-3xl font-bold text-center mb-4 text-gray-800">Dementia Care Program</h2>
+            <p className="text-center text-gray-600 max-w-2xl mx-auto mb-12">
+              Learn more about our specialized dementia care services and approaches.
+            </p>
+
+            <div className="max-w-4xl mx-auto">
+              <div className="space-y-4">
+                {dementiaFaqs.map((faq, index) => (
+                  <div key={index} className="bg-white rounded-xl shadow-md overflow-hidden">
+                    <button
+                      className="w-full p-6 text-left flex justify-between items-center"
+                      onClick={() => toggleFaq(index)}
+                    >
+                      <h3 className="text-lg font-semibold">{faq.question}</h3>
+                      {openFaqIndex === index ? (
+                        <ChevronUp className="h-5 w-5 text-[#a98cc8]" />
+                      ) : (
+                        <ChevronDown className="h-5 w-5 text-[#a98cc8]" />
+                      )}
+                    </button>
+                    {openFaqIndex === index && (
+                      <div className="px-6 pb-6 pt-0 text-gray-700">
+                        {faq.answer}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+
+        {/* <section className="py-16 bg-white">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <h2 className="text-3xl font-bold text-center mb-4 text-gray-800">Frequently Asked Questions</h2>
             <p className="text-center text-gray-600 max-w-2xl mx-auto mb-12">
@@ -230,7 +363,7 @@ export default function InfoPage() {
               </div>
             </div>
           </div>
-        </section>
+        </section> */}
         
       </main>
       <SiteFooter />
