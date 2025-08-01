@@ -1,7 +1,6 @@
 import { Suspense } from "react"
 import type { Metadata } from "next"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Search, Filter, UserPlus } from "lucide-react"
 import { Input } from "@/components/ui/input"
@@ -14,7 +13,7 @@ export const metadata: Metadata = {
 }
 
 export default async function TherapistClientsPage() {
-  const { activeClients, inactiveClients } = await getTherapistClients()
+  const { activeClients } = await getTherapistClients()
 
   return (
     <div className="space-y-6">
@@ -42,38 +41,13 @@ export default async function TherapistClientsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Client List</CardTitle>
-          <CardDescription>View and manage all your clients</CardDescription>
+          <CardTitle>All Clients</CardTitle>
+          <CardDescription>View and manage your active clients</CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="active" className="w-full">
-            <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
-              <TabsTrigger
-                value="active"
-                className="rounded-l-lg data-[state=active]:bg-[#a98cc8] data-[state=active]:text-white"
-              >
-                Active Clients
-              </TabsTrigger>
-              <TabsTrigger
-                value="inactive"
-                className="rounded-r-lg data-[state=active]:bg-[#a98cc8] data-[state=active]:text-white"
-              >
-                Inactive Clients
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="active" className="space-y-4">
-              <Suspense fallback={<div className="h-64 bg-gray-100 animate-pulse rounded-lg"></div>}>
-                <ClientsList clients={activeClients} />
-              </Suspense>
-            </TabsContent>
-
-            <TabsContent value="inactive" className="space-y-4">
-              <Suspense fallback={<div className="h-64 bg-gray-100 animate-pulse rounded-lg"></div>}>
-                <ClientsList clients={inactiveClients} />
-              </Suspense>
-            </TabsContent>
-          </Tabs>
+          <Suspense fallback={<div className="h-64 bg-gray-100 animate-pulse rounded-lg"></div>}>
+            <ClientsList clients={activeClients} />
+          </Suspense>
         </CardContent>
       </Card>
     </div>

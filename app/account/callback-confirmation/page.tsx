@@ -6,7 +6,7 @@ import SiteFooter from "@/components/site-footer"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "Callback Requested - MindfulCare",
+  title: "Callback Requested - Echoing Healthy Aging",
   description: "Your callback request has been received",
 }
 

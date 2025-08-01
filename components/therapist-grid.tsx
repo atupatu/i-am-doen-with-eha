@@ -39,19 +39,17 @@ export default function TherapistGrid({ therapists }: TherapistGridProps) {
             </div>
             <div className="p-6 flex flex-col justify-between flex-grow">
               <div>
-                <h3 className="text-xl font-semibold mb-1">{therapist.name}</h3>
-                <p className="text-[#a98cc8] font-medium mb-2">{therapist.education}</p>
-                <p className="text-gray-600 text-sm mb-3">{therapist.bio}</p>
+                <h3 className="text-xl font-semibold mb-3">{therapist.name}</h3>
                 
-                {/* Qualification */}
+                {/* Qualification - moved to top */}
                 <div className="flex items-start gap-2 text-sm text-gray-700 mb-2">
                   <GraduationCap className="w-4 h-4 mt-0.5 text-[#a98cc8] flex-shrink-0" />
                   <span className="bg-[#f4f0fa] px-2 py-1 rounded-lg text-xs">{therapist.education}</span>
                 </div>
                 
-                {/* Expertise */}
+                {/* Expertise - moved to top */}
                 {areasArray.length > 0 && (
-                  <div className="flex items-start gap-2 text-sm text-gray-700 mb-2">
+                  <div className="flex items-start gap-2 text-sm text-gray-700 mb-3">
                     <Sparkles className="w-4 h-4 mt-0.5 text-[#a98cc8] flex-shrink-0" />
                     <div className="flex flex-wrap gap-1">
                       {areasArray.map((area, i) => (
@@ -62,6 +60,8 @@ export default function TherapistGrid({ therapists }: TherapistGridProps) {
                     </div>
                   </div>
                 )}
+                
+                <p className="text-gray-600 text-sm mb-3">{therapist.bio}</p>
               </div>
               <Button className="w-full bg-[#a98cc8] hover:bg-[#9678b4] text-white flex items-center justify-center gap-2 rounded-xl mt-auto">
                 <Calendar className="h-4 w-4" />

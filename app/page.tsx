@@ -104,7 +104,7 @@ export default function Home() {
                   and expertise.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <Link href="/signin" passHref>
+                  <Link href="/account" passHref>
                     <Button
                       onClick={handleScrollToSchedule}
                       className="bg-[#a98cc8] hover:bg-[#9678b4] text-white px-8 py-6 rounded-xl text-lg"

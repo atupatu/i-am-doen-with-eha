@@ -18,6 +18,7 @@ export default function OnboardingForm() {
   const [preferredMethod, setPreferredMethod] = useState<"call" | "form">("form")
   const [currentStep, setCurrentStep] = useState(0)
   const [formData, setFormData] = useState({})
+  const [isRequestingCall, setIsRequestingCall] = useState(false)
   const router = useRouter()
   
   // Initialize form state with the submitOnboardingForm action
@@ -38,6 +39,11 @@ export default function OnboardingForm() {
     setFormData(prev => ({ ...prev, [name]: value }))
   }
 
+  // Handle request call button click
+  const handleRequestCall = () => {
+    setIsRequestingCall(true)
+  }
+
   // Navigate between form steps
   const nextStep = () => {
     if (currentStep < totalSteps - 1) {
@@ -55,20 +61,20 @@ export default function OnboardingForm() {
 
   useEffect(() => {
     if (formState.success) {
-      router.push("/schedule")
+      router.push("/client/schedule")
     }
   }, [formState.success, router])
 
   useEffect(() => {
-    if (preferredMethod === "call") {
+    if (preferredMethod === "call" || isRequestingCall) {
       const timer = setTimeout(() => {
         localStorage.setItem("userAuthenticated", "true")
         localStorage.setItem("userName", "John Doe")
-        router.push("/schedule")
+        router.push("/client/schedule")
       }, 500)
       return () => clearTimeout(timer)
     }
-  }, [preferredMethod, router])
+  }, [preferredMethod, isRequestingCall, router])
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 md:px-8 py-8 space-y-6">
@@ -81,7 +87,7 @@ export default function OnboardingForm() {
         </CardHeader>
 
         {/* Progress Bar */}
-        {preferredMethod === "form" && (
+        {preferredMethod === "form" && !isRequestingCall && (
           <div className="px-8 pt-6">
             <ProgressBar currentStep={currentStep} totalSteps={totalSteps} />
             <div className="flex justify-between text-sm text-gray-500 mt-1">
@@ -93,7 +99,7 @@ export default function OnboardingForm() {
 
         <CardContent className="pt-6 px-8 pb-8 space-y-6">
           {/* Method Selection */}
-          {currentStep === 0 && (
+          {currentStep === 0 && !isRequestingCall && (
             <MethodSelection 
               preferredMethod={preferredMethod} 
               setPreferredMethod={setPreferredMethod} 
@@ -102,7 +108,7 @@ export default function OnboardingForm() {
           )}
 
           {/* Form Steps */}
-          {preferredMethod === "form" && currentStep > 0 && (
+          {preferredMethod === "form" && currentStep > 0 && !isRequestingCall && (
             // Using form with formAction instead of manual submission
             <form action={formAction} className="space-y-6">
               {formState.error && (
@@ -146,6 +152,26 @@ export default function OnboardingForm() {
                 />
               )}
 
+              {/* Request Call Instead Button - Show on form steps 1, 2, and 3 */}
+              {currentStep >= 1 && (
+                <div className="pt-4 border-t border-gray-200">
+                  <div className="text-center">
+                    <p className="text-sm text-gray-600 mb-3">
+                      Having trouble filling out the form?
+                    </p>
+                    <Button 
+                      type="button" 
+                      onClick={handleRequestCall}
+                      variant="outline"
+                      className="border-[#a98cc8] text-[#a98cc8] hover:bg-[#a98cc8] hover:text-white flex items-center mx-auto"
+                    >
+                      <Phone className="h-4 w-4 mr-2" />
+                      Request a call instead
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               {/* Navigation Buttons */}
               <div className="flex justify-between pt-4">
                 <Button 
@@ -178,7 +204,7 @@ export default function OnboardingForm() {
           )}
 
           {/* Loading State for Call option */}
-          {preferredMethod === "call" && (
+          {(preferredMethod === "call" || isRequestingCall) && (
             <div className="text-center py-12 animate-fadeIn">
               <Phone className="h-12 w-12 text-[#a98cc8] mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-gray-800">Signing you in...</h3>

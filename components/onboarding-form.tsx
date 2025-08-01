@@ -55,7 +55,7 @@ export default function OnboardingForm() {
 
   useEffect(() => {
     if (formState.success) {
-      router.push("/schedule")
+      router.push("/client/schedule")
     }
   }, [formState.success, router])
 
@@ -64,7 +64,7 @@ export default function OnboardingForm() {
       const timer = setTimeout(() => {
         localStorage.setItem("userAuthenticated", "true")
         localStorage.setItem("userName", "John Doe")
-        router.push("/schedule")
+        router.push("/client/schedule")
       }, 500)
       return () => clearTimeout(timer)
     }

@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import TherapistCard from "@/components/therapist-grid";
 import Navbar from "@/components/navbar";
+import SiteFooter from "@/components/site-footer";
 import { Search } from 'lucide-react';
 
 interface Therapist {
@@ -109,7 +110,7 @@ export default function TherapistsPage() {
           <div className="flex flex-wrap gap-2 justify-center mb-10">
             <Button
               variant="outline"
-              className={`rounded-full ${selectedFilter === null ? "border-lavender text-dark-blue-gray" : "border-gray-300 text-dark-blue-gray"} hover:bg-lavender hover:text-white`}
+              className={`rounded-full ${selectedFilter === null ? "border-lavender text-dark-blue-gray" : "border-gray-300 text-dark-blue-gray"} hover:border-lavender `}
               onClick={() => setSelectedFilter(null)}
             >
               All Areas
@@ -138,6 +139,7 @@ export default function TherapistsPage() {
           </div>
         </div>
       </main>
+      <SiteFooter />
     </div>
   );
 }

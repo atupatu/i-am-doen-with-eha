@@ -5,7 +5,7 @@ import { Heart } from "lucide-react"
 import TherapistLoginForm from "@/components/therapist/therapist-login-form"
 
 export const metadata: Metadata = {
-  title: "Therapist Login - MindfulCare",
+  title: "Therapist Login - Echoing Healthy Aging",
   description: "Sign in to your therapist account",
 }
 
@@ -16,7 +16,7 @@ export default function TherapistLoginPage() {
         <div className="container flex h-16 items-center">
           <Link href="/" className="flex items-center gap-2">
             <Heart className="h-6 w-6 text-[#a98cc8]" />
-            <span className="text-xl font-semibold text-[#a98cc8]">MindfulCare</span>
+            <span className="text-xl font-semibold text-[#a98cc8]">Echoing Healthy Aging</span>
           </Link>
         </div>
       </header>
@@ -29,7 +29,7 @@ export default function TherapistLoginPage() {
       </main>
       <footer className="py-6 border-t bg-white/80">
         <div className="container text-center text-sm text-gray-600">
-          <p>&copy; {new Date().getFullYear()} MindfulCare. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} Echoing Healthy Aging. All rights reserved.</p>
         </div>
       </footer>
     </div>

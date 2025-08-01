@@ -114,10 +114,10 @@ export default function SessionsPage() {
       <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
         <div className="flex items-center justify-between">
           <h2 className="text-3xl font-bold tracking-tight">Sessions</h2>
-          <Button className="bg-[#a98cc8] hover:bg-[#9678b4]">
+          {/* <Button className="bg-[#a98cc8] hover:bg-[#9678b4]">
             <Calendar className="mr-2 h-4 w-4" />
             Schedule Session
-          </Button>
+          </Button> */}
         </div>
 
         <div className="flex flex-col md:flex-row gap-4 items-center justify-between">

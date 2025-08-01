@@ -67,7 +67,7 @@ export default function TherapistSidebar() {
           <div className="flex items-center justify-between p-4 border-b">
             <Link href="/therapist" className="flex items-center gap-2">
               <Heart className="h-6 w-6 text-[#a98cc8]" />
-              {!isCollapsed && <span className="text-xl font-semibold text-[#a98cc8]">MindfulCare</span>}
+              {!isCollapsed && <span className="text-xl font-semibold text-[#a98cc8]">Echoing Healthy Aging</span>}
             </Link>
             <Button variant="ghost" size="icon" className="hidden md:flex" onClick={() => setIsCollapsed(!isCollapsed)}>
               <Menu className="h-5 w-5" />

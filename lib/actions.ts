@@ -155,7 +155,7 @@ export async function cancelAppointment(formData: FormData) {
   // In a real app, you would update the appointment in the database
 
   // Revalidate the schedule page to show updated data
-  revalidatePath("/schedule")
+  revalidatePath("/client/schedule")
 
   return { success: true }
 }
@@ -178,7 +178,7 @@ export async function rescheduleAppointment(prevState: any, formData: FormData) 
     console.log("Rescheduling appointment:", appointmentId, "to", date, "at", timeSlot)
 
     // Revalidate the schedule page to show updated data
-    revalidatePath("/schedule")
+    revalidatePath("/client/schedule")
 
     return { error: null, success: true }
   } catch (error) {
@@ -206,10 +206,10 @@ export async function bookSession(formData: FormData) {
   // In a real app, you would book a session here
 
   // Revalidate the path to show updated data
-  revalidatePath("/schedule")
+  revalidatePath("/client/schedule")
 
   // Redirect to the schedule page
-  redirect("/schedule")
+  redirect("/client/schedule")
 
   return { success: true }
 }

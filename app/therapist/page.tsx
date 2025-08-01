@@ -10,7 +10,7 @@ import PendingRequests from "@/components/therapist/pending-requests"
 import { getTherapistData } from "@/lib/therapist-data"
 
 export const metadata: Metadata = {
-  title: "Therapist Dashboard - MindfulCare",
+  title: "Therapist Dashboard - Echoing Healthy Aging",
   description: "Manage your sessions, clients, and schedule",
 }
 

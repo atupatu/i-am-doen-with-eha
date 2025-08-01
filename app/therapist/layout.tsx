@@ -7,7 +7,7 @@ import TherapistHeader from "@/components/therapist/therapist-header"
 import { checkTherapistAuth } from "@/lib/auth-utils"
 
 export const metadata: Metadata = {
-  title: "Therapist Portal - MindfulCare",
+  title: "Therapist Portal - Echoing Healthy Aging",
   description: "Manage your sessions, clients, and schedule",
 }
 

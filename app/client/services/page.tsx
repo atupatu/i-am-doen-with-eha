@@ -173,66 +173,7 @@ export default function InfoPage() {
           </div>
         </section>
 
-        <section className="py-16 bg-[#fef6f9]">
-          <div className="container">
-            <div className="grid gap-12 md:grid-cols-2 items-center">
-              <div>
-                <h2 className="text-3xl font-bold mb-6 text-gray-800">Our Approach to Mental Wellness</h2>
-                <p className="text-gray-600 mb-6">
-                  At Echoing Healthy Aging, we believe in a holistic approach to mental health. We understand that each person's
-                  journey is unique, and we tailor our therapeutic approaches to meet your specific needs.
-                </p>
-                <ul className="space-y-4">
-                  <li className="flex items-start">
-                    <div className="bg-[#c8e6c9] rounded-full p-1 mr-3 mt-1">
-                      <svg className="h-4 w-4 text-[#a98cc8]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                    <p className="text-gray-700">Personalized treatment plans based on your unique needs</p>
-                  </li>
-                  <li className="flex items-start">
-                    <div className="bg-[#c8e6c9] rounded-full p-1 mr-3 mt-1">
-                      <svg className="h-4 w-4 text-[#a98cc8]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                    <p className="text-gray-700">Evidence-based therapeutic techniques</p>
-                  </li>
-                  <li className="flex items-start">
-                    <div className="bg-[#c8e6c9] rounded-full p-1 mr-3 mt-1">
-                      <svg className="h-4 w-4 text-[#a98cc8]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                    <p className="text-gray-700">Compassionate, non-judgmental support</p>
-                  </li>
-                  <li className="flex items-start">
-                    <div className="bg-[#c8e6c9] rounded-full p-1 mr-3 mt-1">
-                      <svg className="h-4 w-4 text-[#a98cc8]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                    <p className="text-gray-700">Ongoing progress assessment and plan adjustments</p>
-                  </li>
-                </ul>
-                <Link href="./signin" passHref>
-                  <Button className="mt-8 bg-[#a98cc8] hover:bg-[#9678b4] text-white px-8 py-6 rounded-xl">
-                    Book a Consultation
-                  </Button>
-                </Link>
-              </div>
-              <div className="relative h-[400px] rounded-3xl overflow-hidden shadow-xl">
-                <Image
-                  src="/approach2.png?height=800&width=600"
-                  alt="Therapeutic session"
-                  fill
-                  className="object-cover"
-                />
-              </div>
-            </div>
-          </div>
-        </section>
+        
         
         <section className="bg-[#fef6f9] py-16 md:py-24">
           <div className="container">
@@ -293,41 +234,7 @@ export default function InfoPage() {
           </div>
         </section>
 
-        {/* Dementia Care FAQ Section */}
-        <section className="py-16 bg-[#fef6f9]">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 className="text-3xl font-bold text-center mb-4 text-gray-800">Dementia Care Program</h2>
-            <p className="text-center text-gray-600 max-w-2xl mx-auto mb-12">
-              Learn more about our specialized dementia care services and approaches.
-            </p>
-
-            <div className="max-w-4xl mx-auto">
-              <div className="space-y-4">
-                {dementiaFaqs.map((faq, index) => (
-                  <div key={index} className="bg-white rounded-xl shadow-md overflow-hidden">
-                    <button
-                      className="w-full p-6 text-left flex justify-between items-center"
-                      onClick={() => toggleFaq(index)}
-                    >
-                      <h3 className="text-lg font-semibold">{faq.question}</h3>
-                      {openFaqIndex === index ? (
-                        <ChevronUp className="h-5 w-5 text-[#a98cc8]" />
-                      ) : (
-                        <ChevronDown className="h-5 w-5 text-[#a98cc8]" />
-                      )}
-                    </button>
-                    {openFaqIndex === index && (
-                      <div className="px-6 pb-6 pt-0 text-gray-700">
-                        {faq.answer}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-
+       
 
         {/* <section className="py-16 bg-white">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">

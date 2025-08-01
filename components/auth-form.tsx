@@ -43,7 +43,7 @@ export default function AuthForm() {
   return (
     <Card className="w-full shadow-lg border-0">
       <CardHeader className="bg-[#a98cc8]/10 rounded-t-lg">
-        <CardTitle className="text-2xl font-bold text-center text-gray-800">Welcome to MindfulCare</CardTitle>
+        <CardTitle className="text-2xl font-bold text-center text-gray-800">Welcome to Echoing Healthy Aging</CardTitle>
         <CardDescription className="text-center text-gray-600">Your journey to wellness begins here</CardDescription>
       </CardHeader>
       <CardContent className="pt-6">
@@ -331,7 +331,7 @@ export default function AuthForm() {
         </CardHeader>
         <CardContent className="pt-6 space-y-4 text-center text-gray-700">
           <p>
-            The email <span className="font-medium">{registeredEmail}</span> is already registered with MindfulCare.
+            The email <span className="font-medium">{registeredEmail}</span> is already registered with Echoing Healthy Aging.
           </p>
           <p>Would you like to sign in using this email instead?</p>
           <Button 
@@ -367,7 +367,7 @@ export default function AuthForm() {
   return (
     <Card className="w-full shadow-lg border-0">
       <CardHeader className="bg-[#a98cc8]/10 rounded-t-lg">
-        <CardTitle className="text-2xl font-bold text-center text-gray-800">Welcome to MindfulCare</CardTitle>
+        <CardTitle className="text-2xl font-bold text-center text-gray-800">Welcome to Echoing Healthy Aging</CardTitle>
         <CardDescription className="text-center text-gray-600">Your journey to wellness begins here</CardDescription>
       </CardHeader>
       <CardContent className="pt-6">

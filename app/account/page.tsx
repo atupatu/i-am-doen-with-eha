@@ -50,8 +50,8 @@ import { Suspense } from "react"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "Account - MindfulCare",
-  description: "Sign in to your MindfulCare account or create a new account",
+  title: "Account - Echoing Healthy Aging",
+  description: "Sign in to your Echoing Healthy Aging account or create a new account",
 }
 
 export default async function AccountPage() {
