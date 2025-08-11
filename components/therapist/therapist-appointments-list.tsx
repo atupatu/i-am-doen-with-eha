@@ -5,22 +5,22 @@ import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Calendar, Clock, MapPin, FileUp, MapPinned } from "lucide-react"
+import { Calendar, Clock, FileUp } from "lucide-react"
 import { formatDate, formatTime } from "@/lib/utils"
 import UploadReportForm from "@/components/therapist/upload-report-form"
 import RescheduleAppointmentForm from "@/components/therapist/reschedule-appointment-form"
 
 interface AppointmentProps {
-  id: number
-  clientName: string
-  clientImage?: string
-  date: string
-  time: string
-  type: string
-  location: string
-  address?: string
-  status: "confirmed" | "pending" | "cancelled" | "completed"
-  mode: "online" | "in-person"
+  sid: number
+  uid: string
+  userName: string
+  userImage?: string
+  scheduled_date: string
+  start_time: string
+  end_time: string
+  status: "pending" | "approved" | "declined" | "completed"
+  report_content?: string
+  report_submitted_at?: string
 }
 
 interface TherapistAppointmentsListProps {
@@ -31,7 +31,6 @@ export default function TherapistAppointmentsList({ appointments }: TherapistApp
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentProps | null>(null)
   const [uploadReportOpen, setUploadReportOpen] = useState(false)
   const [rescheduleOpen, setRescheduleOpen] = useState(false)
-  const [addressDialogOpen, setAddressDialogOpen] = useState(false)
 
   if (appointments.length === 0) {
     return (
@@ -45,14 +44,14 @@ export default function TherapistAppointmentsList({ appointments }: TherapistApp
     <>
       <div className="space-y-4">
         {appointments.map((appointment) => (
-          <div key={appointment.id} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-gray-50">
+          <div key={appointment.sid} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-gray-50">
             <Avatar className="h-10 w-10">
               <AvatarImage
-                src={appointment.clientImage || "/placeholder.svg?height=40&width=40"}
-                alt={appointment.clientName}
+                src={appointment.userImage || "/placeholder.svg?height=40&width=40"}
+                alt={appointment.userName}
               />
               <AvatarFallback>
-                {appointment.clientName
+                {appointment.userName
                   .split(" ")
                   .map((n) => n[0])
                   .join("")}
@@ -60,47 +59,43 @@ export default function TherapistAppointmentsList({ appointments }: TherapistApp
             </Avatar>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <h4 className="font-medium truncate">{appointment.clientName}</h4>
+                <h4 className="font-medium truncate">{appointment.userName}</h4>
                 <Badge
-                  variant={appointment.status === "confirmed" ? "default" : "outline"}
+                  variant={
+                    appointment.status === "approved"
+                      ? "default"
+                      : appointment.status === "completed"
+                        ? "secondary"
+                        : "outline"
+                  }
                   className={
-                    appointment.status === "confirmed"
+                    appointment.status === "approved"
                       ? "bg-[#a98cc8]"
                       : appointment.status === "completed"
-                        ? "border-blue-500 text-blue-500"
-                        : appointment.status === "cancelled"
-                          ? "border-red-500 text-red-500"
-                          : "border-yellow-500 text-yellow-500"
+                        ? "bg-green-100 text-green-800"
+                        : appointment.status === "declined"
+                          ? "bg-red-100 text-red-800"
+                          : "bg-yellow-100 text-yellow-800"
                   }
                 >
                   {appointment.status}
-                </Badge>
-                <Badge
-                  variant="outline"
-                  className={
-                    appointment.mode === "online" ? "border-blue-500 text-blue-500" : "border-green-500 text-green-500"
-                  }
-                >
-                  {appointment.mode}
                 </Badge>
               </div>
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500 mt-1">
                 <div className="flex items-center gap-1">
                   <Calendar className="h-4 w-4" />
-                  <span>{formatDate(appointment.date)}</span>
+                  <span>{formatDate(appointment.scheduled_date)}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Clock className="h-4 w-4" />
-                  <span>{formatTime(appointment.time)}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <MapPin className="h-4 w-4" />
-                  <span className="truncate">{appointment.location}</span>
+                  <span>
+                    {formatTime(appointment.start_time)} - {formatTime(appointment.end_time)}
+                  </span>
                 </div>
               </div>
             </div>
             <div className="flex gap-2">
-              {appointment.status === "confirmed" && (
+              {appointment.status === "approved" && (
                 <>
                   <Button
                     variant="outline"
@@ -127,20 +122,6 @@ export default function TherapistAppointmentsList({ appointments }: TherapistApp
                   </Button>
                 </>
               )}
-              {appointment.mode === "in-person" && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-green-600 border-green-200 hover:bg-green-50"
-                  onClick={() => {
-                    setSelectedAppointment(appointment)
-                    setAddressDialogOpen(true)
-                  }}
-                >
-                  <MapPinned className="h-4 w-4 mr-1" />
-                  Address
-                </Button>
-              )}
             </div>
           </div>
         ))}
@@ -151,14 +132,14 @@ export default function TherapistAppointmentsList({ appointments }: TherapistApp
         <Dialog open={uploadReportOpen} onOpenChange={setUploadReportOpen}>
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
-              <DialogTitle>Upload Report for {selectedAppointment.clientName}</DialogTitle>
+              <DialogTitle>Upload Report for {selectedAppointment.userName}</DialogTitle>
               <DialogDescription>
-                Create and upload a session report for the appointment on {formatDate(selectedAppointment.date)}
+                Create and upload a session report for the appointment on {formatDate(selectedAppointment.scheduled_date)}
               </DialogDescription>
             </DialogHeader>
             <UploadReportForm
-              appointmentId={selectedAppointment.id}
-              clientName={selectedAppointment.clientName}
+              appointmentId={selectedAppointment.sid}
+              clientName={selectedAppointment.userName}
               onSuccess={() => setUploadReportOpen(false)}
             />
           </DialogContent>
@@ -170,41 +151,15 @@ export default function TherapistAppointmentsList({ appointments }: TherapistApp
         <Dialog open={rescheduleOpen} onOpenChange={setRescheduleOpen}>
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
-              <DialogTitle>Reschedule Appointment with {selectedAppointment.clientName}</DialogTitle>
+              <DialogTitle>Reschedule Appointment with {selectedAppointment.userName}</DialogTitle>
               <DialogDescription>Select a new date and time for this appointment</DialogDescription>
             </DialogHeader>
             <RescheduleAppointmentForm
-              appointmentId={selectedAppointment.id}
-              currentDate={selectedAppointment.date}
-              currentTime={selectedAppointment.time}
+              appointmentId={selectedAppointment.sid}
+              currentDate={selectedAppointment.scheduled_date}
+              currentTime={selectedAppointment.start_time}
               onSuccess={() => setRescheduleOpen(false)}
             />
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {/* Address Dialog */}
-      {selectedAppointment && (
-        <Dialog open={addressDialogOpen} onOpenChange={setAddressDialogOpen}>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>Client Address</DialogTitle>
-              <DialogDescription>Address for in-person session with {selectedAppointment.clientName}</DialogDescription>
-            </DialogHeader>
-            <div className="p-4 bg-gray-50 rounded-lg">
-              <div className="flex items-start gap-2">
-                <MapPinned className="h-5 w-5 text-green-600 mt-0.5" />
-                <div>
-                  <h4 className="font-medium">{selectedAppointment.clientName}</h4>
-                  <p className="text-gray-700 mt-1">
-                    {selectedAppointment.address || "123 Serenity Lane, Peaceful City, CA 90210"}
-                  </p>
-                </div>
-              </div>
-              <div className="mt-4 h-40 bg-gray-200 rounded-md flex items-center justify-center">
-                <p className="text-gray-500 text-sm">Map view would appear here</p>
-              </div>
-            </div>
           </DialogContent>
         </Dialog>
       )}
