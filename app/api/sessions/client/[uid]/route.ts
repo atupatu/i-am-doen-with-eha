@@ -1,33 +1,66 @@
-//api for user to view all their sessions
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabaseClient'
 
-// Modified version that could return count or full data
+// API for user to view all their sessions
 export async function GET(
   req: NextRequest,
-  { params }: { params: { uid: string } }
+  context: { params: Promise<{ uid: string }> }
 ) {
-  const { uid } = params
-  const { searchParams } = new URL(req.url)
-  const countOnly = searchParams.get('count') === 'true'
+  try {
+    // Get auth token from headers
+    const authHeader = req.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
-  if (countOnly) {
-    const { count, error } = await supabase
+    const token = authHeader.substring(7)
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token)
+            
+    if (userError || !user) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+    }
+
+    const params = await context.params
+    const uid = params.uid
+
+    // Authorization: Ensure the authenticated user is accessing their own sessions
+    if (user.id !== uid) {
+      return NextResponse.json({ error: 'Forbidden - You can only access your own sessions' }, { status: 403 })
+    }
+
+    const { searchParams } = new URL(req.url)
+    const countOnly = searchParams.get('count') === 'true'
+
+    if (countOnly) {
+      const { count, error } = await supabase
+        .from('sessions')
+        .select('*', { count: 'exact', head: true })
+        .eq('uid', uid)
+            
+      if (error) throw error
+      return NextResponse.json({ count })
+    }
+
+    // Simple join approach - Supabase should auto-detect the relationship
+    const { data, error } = await supabase
       .from('sessions')
-      .select('*', { count: 'exact', head: true })
+      .select(`
+        *,
+        therapists(name)
+      `)
       .eq('uid', uid)
+      .order('scheduled_date', { ascending: false })
+
+    if (error) {
+      console.error('Supabase error:', error)
+      throw error
+    }
     
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-    return NextResponse.json({ count })
+    console.log('API Response data:', JSON.stringify(data, null, 2))
+    return NextResponse.json(data)
+    
+  } catch (error: any) {
+    console.error('API Error:', error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
   }
-
-  // Existing logic for full data
-  const { data, error } = await supabase
-    .from('sessions')
-    .select('*')
-    .eq('uid', uid)
-    .order('scheduled_date', { ascending: false })
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data)
 }
