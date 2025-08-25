@@ -30,6 +30,7 @@ interface ClientsListProps {
 }
 
 export default function ClientsList({ clients }: ClientsListProps) {
+    console.log("Inspecting clients prop:", clients);
   const [selectedClient, setSelectedClient] = useState<ClientProps | null>(null)
   const [clientDetailsOpen, setClientDetailsOpen] = useState(false)
 

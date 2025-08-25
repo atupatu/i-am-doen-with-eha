@@ -2,17 +2,21 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs" // Import Supabase helper
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { LayoutDashboard, Calendar, Users, FileText, Settings, LogOut, Menu, X, Heart } from "lucide-react"
 
 export default function TherapistSidebar() {
   const pathname = usePathname()
+  const router = useRouter()
+  const supabase = createClientComponentClient() // Create Supabase client instance
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isMobileOpen, setIsMobileOpen] = useState(false)
 
   const navItems = [
+    // ... (your navItems array remains the same)
     {
       title: "Dashboard",
       href: "/therapist",
@@ -40,6 +44,13 @@ export default function TherapistSidebar() {
     },
   ]
 
+  // Updated sign-out function for Supabase
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    router.push('/') // Redirect to the login page after sign-out
+    router.refresh() // Refresh the page to clear any cached user data
+  }
+
   return (
     <>
       {/* Mobile Sidebar Toggle */}
@@ -64,6 +75,7 @@ export default function TherapistSidebar() {
         } ${isCollapsed ? "w-20" : "w-64"}`}
       >
         <div className="flex flex-col h-full">
+          {/* ... (Header and Navigation sections remain the same) */}
           <div className="flex items-center justify-between p-4 border-b">
             <Link href="/therapist" className="flex items-center gap-2">
               <Heart className="h-6 w-6 text-[#a98cc8]" />
@@ -97,6 +109,7 @@ export default function TherapistSidebar() {
               className={`w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50 ${
                 isCollapsed ? "px-2" : ""
               }`}
+              onClick={handleSignOut} // The onClick handler calls our new function
             >
               <LogOut className="h-5 w-5" />
               {!isCollapsed && <span className="ml-2">Sign Out</span>}

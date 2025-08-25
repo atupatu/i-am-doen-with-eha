@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Search, Filter, UserPlus } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import ClientsList from "@/components/therapist/clients-list"
-import { getTherapistClients } from "@/lib/therapist-data"
+import { createSupabaseServerClient } from "@/lib/supabaseServer"
 
 export const metadata: Metadata = {
   title: "Clients - Therapist Portal",
@@ -13,7 +13,31 @@ export const metadata: Metadata = {
 }
 
 export default async function TherapistClientsPage() {
-  const { activeClients } = await getTherapistClients()
+  const supabase = createSupabaseServerClient();
+
+  // Get user session from server
+  const {
+    data: { user },
+    error
+  } = await supabase.auth.getUser();
+
+  if (error || !user?.email) {
+    console.error("Error getting user:", error)
+    return <div>Unable to fetch user session</div>
+  }
+
+  // Fetch clients using the email
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/uniClients?email=${user.email}`, {
+    cache: "no-store",
+  });
+  console.log("Fetch clients response:", res);
+
+  if (!res.ok) {
+    return <div>Failed to load clients</div>
+  }
+
+  const { clients } = await res.json();
+  console.log("Active clients:", clients);
 
   return (
     <div className="space-y-6">
@@ -46,7 +70,7 @@ export default async function TherapistClientsPage() {
         </CardHeader>
         <CardContent>
           <Suspense fallback={<div className="h-64 bg-gray-100 animate-pulse rounded-lg"></div>}>
-            <ClientsList clients={activeClients} />
+            <ClientsList clients={clients} />
           </Suspense>
         </CardContent>
       </Card>

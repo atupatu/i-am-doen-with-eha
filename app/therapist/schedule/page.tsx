@@ -29,7 +29,7 @@ async function getTherapistSessions() {
       return { error: 'No valid session', data: [] }
     }
 
-    const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/sessions/therapist/${session.user.id}`
+    const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/sessions/therapist/${session.user.id}`
 
     const response = await fetch(apiUrl, {
       headers: {
@@ -45,6 +45,7 @@ async function getTherapistSessions() {
     }
 
     const result = await response.json()
+    console.log("Fetched sessions data:", result);
     
     return { error: null, data: result.data || [] }
   } catch (error) {
