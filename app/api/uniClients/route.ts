@@ -10,6 +10,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Therapist email is required' }, { status: 400 })
     }
 
+    // 1️⃣ Find therapist
     const { data: therapist, error: therapistError } = await supabase
       .from('therapists')
       .select('tid, name, email')
@@ -20,6 +21,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Therapist not found' }, { status: 404 })
     }
 
+    console.log("Therapist found:", therapist.tid);
+
+    // 2️⃣ Fetch assignments with client details
     const { data: assignments, error: assignmentsError } = await supabase
       .from('assignments')
       .select(`
@@ -32,22 +36,31 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: assignmentsError.message }, { status: 500 })
     }
 
-    const uniqueClientsMap = new Map()
-    assignments?.forEach(assignment => {
-      const client = (assignment.client as any)?.[0]
+    console.log("Assignments fetched:", assignments);
 
-      if (client && !uniqueClientsMap.has(client.uid)) {
-        uniqueClientsMap.set(client.uid, {
-          id: client.uid,
-          name: client.name,
-          email: client.email,
-          phone: client.phone
-        })
+    // 3️⃣ Deduplicate clients
+    const uniqueClientsMap = new Map<string, any>()
+
+    assignments?.forEach(assignment => {
+      const client = assignment.client as any   // 👈 FIX: no [0]
+
+      if (client) {
+        const uid = String(client.uid)
+        if (!uniqueClientsMap.has(uid)) {
+          uniqueClientsMap.set(uid, {
+            id: uid,
+            name: client.name,
+            email: client.email,
+            phone: client.phone
+          })
+        }
       }
     })
 
     const uniqueClients = Array.from(uniqueClientsMap.values())
+    console.log("Unique clients:", uniqueClients);
 
+    // 4️⃣ Return result
     return NextResponse.json({
       therapist: {
         tid: therapist.tid,
@@ -58,6 +71,7 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
+    console.error("Server error:", error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
