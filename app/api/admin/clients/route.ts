@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabaseClient'
-// API endpoint: /api/admin/clients (With Debug Logging)
-export async function POST(request) {
+
+// API endpoint: /api/admin/clients
+export async function POST(request: NextRequest) {
   try {
     console.log('=== API ENDPOINT START ===');
     
@@ -12,7 +13,7 @@ export async function POST(request) {
 
     if (!name || !email) {
       console.log('Validation failed: Missing name or email');
-      return Response.json(
+      return NextResponse.json(
         { error: 'Name and email are required' },
         { status: 400 }
       );
@@ -42,9 +43,18 @@ export async function POST(request) {
 
     if (error) {
       console.error('Supabase RPC error:', error);
-      return Response.json(
+      return NextResponse.json(
         { error: error.message },
         { status: 400 }
+      );
+    }
+
+    // Check if RPC returned a valid UID
+    if (!data) {
+      console.error('RPC did not return a UID');
+      return NextResponse.json(
+        { error: 'Failed to create user - no UID returned' },
+        { status: 500 }
       );
     }
 
@@ -69,7 +79,7 @@ export async function POST(request) {
 
     if (fetchError) {
       console.error('Error fetching created user:', fetchError);
-      return Response.json({
+      return NextResponse.json({
         success: true,
         uid: data,
         message: 'User created but could not fetch details'
@@ -77,7 +87,7 @@ export async function POST(request) {
     }
 
     console.log('=== API ENDPOINT SUCCESS ===');
-    return Response.json({
+    return NextResponse.json({
       success: true,
       user: user
     });
@@ -88,7 +98,7 @@ export async function POST(request) {
     console.error('Error message:', error.message);
     console.error('Error stack:', error.stack);
     
-    return Response.json(
+    return NextResponse.json(
       { error: `Internal server error: ${error.message}` },
       { status: 500 }
     );

@@ -355,8 +355,10 @@ import { Button } from "@/components/ui/button"
 import { User, Therapist, Notification, FormData } from "./types"
 import ClientTable from "./ClientTable"
 import ClientModals from "./ClientModals"
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
 export default function ClientsPage() {
+  const supabase = createClientComponentClient()
   const [clients, setClients] = useState<User[]>([])
   const [therapists, setTherapists] = useState<Therapist[]>([])
   const [loading, setLoading] = useState(true)
@@ -381,47 +383,112 @@ export default function ClientsPage() {
     form_response: ''
   })
 
+  // Helper function to get auth headers
+const getAuthHeaders = async () => {
+  const { data: { session } } = await supabase.auth.getSession()
+  
+  if (!session?.access_token) {
+    throw new Error('No active session')
+  }
+
+  return {
+    'Authorization': `Bearer ${session.access_token}`,
+    'Content-Type': 'application/json'
+  }
+}
+
   // Fetch clients and therapists from API
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true)
+useEffect(() => {
+  let isMounted = true; // Track if component is mounted
+  
+  const fetchData = async () => {
+    try {
+      if (!isMounted) return;
+      setLoading(true);
+      
+      // 1. Check authentication
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        throw new Error(sessionError?.message || 'No active session');
+      }
+
+      // 2. Prepare authenticated requests
+      const headers = {
+        'Authorization': `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json'
+      };
+
+      // 3. Parallel fetch with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+      
+      const [usersResponse, therapistsResponse] = await Promise.all([
+        fetch('/api/users', { 
+          headers, 
+          signal: controller.signal 
+        }),
+        fetch('/api/therapists', { 
+          headers, 
+          signal: controller.signal 
+        })
+      ]);
+      
+      clearTimeout(timeoutId);
+
+      // 4. Handle responses
+      if (!usersResponse.ok || !therapistsResponse.ok) {
+        const [usersError, therapistsError] = await Promise.all([
+          usersResponse.json().catch(() => ({ error: 'Failed to parse users error' })),
+          therapistsResponse.json().catch(() => ({ error: 'Failed to parse therapists error' }))
+        ]);
         
-        const [usersResponse, therapistsResponse] = await Promise.all([
-          fetch('/api/users'),
-          fetch('/api/therapists')
-        ])
-        
-        if (!usersResponse.ok) {
-          throw new Error('Failed to fetch clients')
-        }
-        
-        if (!therapistsResponse.ok) {
-          throw new Error('Failed to fetch therapists')
-        }
-        
-        const usersData = await usersResponse.json()
-        const therapistsData = await therapistsResponse.json()
-        
-        if (usersData.error) {
-          throw new Error(usersData.error)
-        }
-        
-        if (therapistsData.error) {
-          throw new Error(therapistsData.error)
-        }
-        
-        setClients(usersData.users || [])
-        setTherapists(therapistsData.therapists || therapistsData || [])
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred')
-      } finally {
-        setLoading(false)
+        throw new Error(
+          `${usersResponse.ok ? '' : `Users: ${usersError.error || usersResponse.statusText}`} 
+          ${!usersResponse.ok && !therapistsResponse.ok ? ' | ' : ''}
+          ${therapistsResponse.ok ? '' : `Therapists: ${therapistsError.error || therapistsResponse.statusText}`}`
+        );
+      }
+
+      // 5. Process data
+      const [usersData, therapistsData] = await Promise.all([
+        usersResponse.json(),
+        therapistsResponse.json()
+      ]);
+
+      if (!isMounted) return;
+
+      // 6. Validate and set state
+      if (usersData?.error || therapistsData?.error) {
+        throw new Error(usersData?.error || therapistsData?.error);
+      }
+
+      setClients(Array.isArray(usersData.users) ? usersData.users : []);
+      setTherapists(Array.isArray(therapistsData.therapists) ? therapistsData.therapists : []);
+      
+    } catch (err) {
+      if (!isMounted) return;
+      console.error('Fetch error:', err);
+      
+      setError(
+        err instanceof Error ? err.message : 
+        typeof err === 'string' ? err : 
+        'An unknown error occurred'
+      );
+    } finally {
+      if (isMounted) {
+        setLoading(false);
       }
     }
+  };
 
-    fetchData()
-  }, [])
+  fetchData();
+
+  // Cleanup function
+  return () => {
+    isMounted = false;
+  };
+}, [supabase]); // Add supabase to dependencies if it's not stable
 
   const showNotification = (message: string, details?: string) => {
     setNotification({ message, details })
@@ -444,11 +511,11 @@ export default function ClientsPage() {
 
   const handleDeactivateClient = async (client: User) => {
     try {
+      const headers = await getAuthHeaders()
+      
       const response = await fetch(`/api/users/${client.uid}`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           is_active: false
         }),
@@ -558,11 +625,11 @@ const handleAddClient = async () => {
         parsedFormResponse = {}
       }
 
+      const headers = await getAuthHeaders()
+
       const response = await fetch(`/api/users/${selectedClient.uid}`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           name: formData.name,
           email: formData.email,

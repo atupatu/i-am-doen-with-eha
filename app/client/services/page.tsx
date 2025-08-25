@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import Image from "next/image"
-import { Heart, Brain, Users, Sparkles, ArrowRight, ChevronDown, ChevronUp  } from "lucide-react"
+import { Heart, Brain, Users, Sparkles, ArrowRight, ChevronDown, ChevronUp, Phone  } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Navbar from "@/components/navbar";
 import SiteFooter from "@/components/site-footer";
@@ -229,6 +229,45 @@ export default function InfoPage() {
                 <Link href="#" className="text-[#a98cc8] font-medium flex items-center hover:underline">
                   Learn more <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Caregiver Support Info Block */}
+        <section className="py-16 bg-gradient-to-br from-[#a98cc8]/25 via-[#b899d1]/20 to-[#c8a8d8]/25">
+          <div className="container">
+            <div className="max-w-3xl mx-auto">
+              <div className="bg-white p-8 rounded-3xl shadow-xl border-0 relative overflow-hidden">
+                
+                <div className="relative z-10 text-center">
+                  <div className="bg-gradient-to-r from-[#a98cc8] to-[#f4c9c8] p-4 rounded-full inline-block mb-6">
+                    <Heart className="h-10 w-10 text-white" />
+                  </div>
+                  
+                  <h2 className="text-3xl font-bold mb-6 text-gray-800">
+                    Compassionate Caregiver Support
+                  </h2>
+                  
+                  <p className="text-lg text-gray-700 mb-8 leading-relaxed max-w-2xl mx-auto">
+                    Along with therapy services, we also offer compassionate caregiver support for senior citizens to ensure comfort and well-being in daily life.
+                  </p>
+                  
+                  <div className="bg-[#fef6f9] p-6 rounded-2xl inline-block border-2 border-[#f4c9c8]/30">
+                    <p className="text-gray-700 mb-4 font-medium">For more details, please reach out to us at</p>
+                    <div className="flex items-center justify-center gap-3">
+                      <div className="bg-[#a98cc8] p-3 rounded-full">
+                        <Phone className="h-5 w-5 text-white" />
+                      </div>
+                      <a 
+                        href="tel:+919876543210" 
+                        className="text-2xl font-bold text-[#a98cc8] hover:text-[#9678b4] transition-colors duration-300"
+                      >
+                        +91 98765 43210
+                      </a>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
