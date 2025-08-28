@@ -1,3 +1,4 @@
+//app/client/therapists/page.tsx
 "use client"
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,7 @@ interface Therapist {
   name: string;
   education: string;
   bio: string;
-  areas_covered: string; // Now expecting a string
+  areas_covered: string;
   image?: string;
 }
 
@@ -32,7 +33,7 @@ export default function TherapistsPage() {
             name: therapist.name,
             education: therapist.education,
             bio: therapist.bio,
-            areas_covered: therapist.areas_covered || "", // Keep as string
+            areas_covered: therapist.areas_covered || "",
             image: "/images/therapist_placeholder.jpg"
           }));
           setTherapists(formattedTherapists);
