@@ -10,8 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Phone, FileText, ChevronRight, ChevronLeft } from "lucide-react"
-import { submitOnboardingForm, requestCallback } from "@/lib/actions"
-import { useFormState } from "react-dom"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 
 // Main component
 export default function OnboardingForm() {
@@ -19,14 +18,35 @@ export default function OnboardingForm() {
   const [currentStep, setCurrentStep] = useState(0)
   const [formData, setFormData] = useState({})
   const [isRequestingCall, setIsRequestingCall] = useState(false)
+  const [uid, setUid] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
-  
-  // Initialize form state with the submitOnboardingForm action
-  const [formState, formAction] = useFormState(submitOnboardingForm, { error: null, success: false })
-  const [callbackState, callbackAction] = useFormState(requestCallback, { error: null, success: false })
+  const supabase = createClientComponentClient()
 
   // Total number of steps in the form
   const totalSteps = 4
+
+  // Fetch user and onboarding data on mount
+  useEffect(() => {
+    const getUserAndData = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        setUid(user.id)
+        try {
+          const res = await fetch(`/api/onboarding/${user.id}`)
+          if (res.ok) {
+            const data = await res.json()
+            setFormData(data)
+          }
+        } catch (err) {
+          console.error("Failed to fetch onboarding data", err)
+        }
+      } else {
+        router.push("/login")
+      }
+    }
+    getUserAndData()
+  }, [router, supabase])
 
   // Handle input changes
   const handleInputChange = (e) => {
@@ -37,6 +57,29 @@ export default function OnboardingForm() {
   // Handle select changes
   const handleSelectChange = (name, value) => {
     setFormData(prev => ({ ...prev, [name]: value }))
+  }
+
+  // Handle form submission
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setError(null)
+    if (!uid) {
+      setError("User not authenticated")
+      return
+    }
+    try {
+      const res = await fetch(`/api/onboarding/${uid}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      })
+      if (!res.ok) {
+        throw new Error("Failed to update")
+      }
+      router.push("/client/schedule")
+    } catch (err) {
+      setError("Failed to submit form. Please try again.")
+    }
   }
 
   // Handle request call button click
@@ -60,21 +103,24 @@ export default function OnboardingForm() {
   }
 
   useEffect(() => {
-    if (formState.success) {
-      router.push("/client/schedule")
-    }
-  }, [formState.success, router])
-
-  useEffect(() => {
     if (preferredMethod === "call" || isRequestingCall) {
-      const timer = setTimeout(() => {
-        localStorage.setItem("userAuthenticated", "true")
-        localStorage.setItem("userName", "John Doe")
+      const timer = setTimeout(async () => {
+        if (uid) {
+          try {
+            await fetch(`/api/onboarding/${uid}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ preferredMethod: "call" }),
+            })
+          } catch (err) {
+            console.error("Failed to update preferred method", err)
+          }
+        }
         router.push("/client/schedule")
       }, 500)
       return () => clearTimeout(timer)
     }
-  }, [preferredMethod, isRequestingCall, router])
+  }, [preferredMethod, isRequestingCall, router, uid])
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 md:px-8 py-8 space-y-6">
@@ -109,23 +155,12 @@ export default function OnboardingForm() {
 
           {/* Form Steps */}
           {preferredMethod === "form" && currentStep > 0 && !isRequestingCall && (
-            // Using form with formAction instead of manual submission
-            <form action={formAction} className="space-y-6">
-              {formState.error && (
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {error && (
                 <div className="p-4 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">
-                  {formState.error}
+                  {error}
                 </div>
               )}
-
-              {/* Hidden inputs to include all form data */}
-              {Object.entries(formData).map(([key, value]) => (
-                <input 
-                  key={key} 
-                  type="hidden" 
-                  name={key} 
-                  value={value as string} 
-                />
-              ))}
 
               {/* Basic Information */}
               {currentStep === 1 && (

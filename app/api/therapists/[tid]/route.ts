@@ -7,6 +7,17 @@ export async function GET(
   context: { params: Promise<{ tid: string }> }
 ) {
   try {
+    // Auth check
+    const authHeader = req.headers.get('authorization')
+    if (!authHeader) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    const token = authHeader.split(' ')[1]
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const params = await context.params
     const tid = params.tid
 
@@ -16,20 +27,25 @@ export async function GET(
       return NextResponse.json({ error: 'Invalid therapist ID format' }, { status: 400 })
     }
 
-    const { data, error } = await supabase
+    // Fetch therapist to check ownership
+    const { data: therapist, error: fetchError } = await supabase
       .from('therapists')
       .select('*')
       .eq('tid', tid)
       .single()
 
-    if (error) {
-      if (error.code === 'PGRST116') {
+    if (fetchError) {
+      if (fetchError.code === 'PGRST116') {
         return NextResponse.json({ error: 'Therapist not found' }, { status: 404 })
       }
-      throw error
+      throw fetchError
     }
 
-    return NextResponse.json({ therapist: data }, { status: 200 })
+    if (therapist.user_id !== user.id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    return NextResponse.json({ therapist }, { status: 200 })
   } catch (error: any) {
     console.error('Error fetching therapist:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
@@ -41,6 +57,17 @@ export async function PATCH(
   context: { params: Promise<{ tid: string }> }
 ) {
   try {
+    // Auth check
+    const authHeader = req.headers.get('authorization')
+    if (!authHeader) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    const token = authHeader.split(' ')[1]
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const params = await context.params
     const tid = params.tid
     const body = await req.json()
@@ -54,13 +81,29 @@ export async function PATCH(
       education,
       bio,
       languages,
-      areas_covered
+      areas_covered,
+      availability
     } = body
 
     // Validate UUID format
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
     if (!uuidRegex.test(tid)) {
       return NextResponse.json({ error: 'Invalid therapist ID format' }, { status: 400 })
+    }
+
+    // Fetch therapist to check ownership
+    const { data: therapist, error: fetchError } = await supabase
+      .from('therapists')
+      .select('user_id')
+      .eq('tid', tid)
+      .single()
+
+    if (fetchError || !therapist) {
+      return NextResponse.json({ error: 'Therapist not found' }, { status: 404 })
+    }
+
+    if (therapist.user_id !== user.id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     // Validate required fields if provided
@@ -92,6 +135,13 @@ export async function PATCH(
       }
     }
 
+    // Basic validation for availability if provided
+    if (availability !== undefined && availability !== null) {
+      if (typeof availability !== 'object' || Array.isArray(availability)) {
+        return NextResponse.json({ error: 'Availability must be an object' }, { status: 400 })
+      }
+    }
+
     // Build update object with only provided fields
     const updateData: any = {}
     if (name !== undefined) updateData.name = name.trim()
@@ -103,6 +153,7 @@ export async function PATCH(
     if (bio !== undefined) updateData.bio = bio?.trim() || null
     if (languages !== undefined) updateData.languages = languages?.trim() || null
     if (areas_covered !== undefined) updateData.areas_covered = areas_covered?.trim() || null
+    if (availability !== undefined) updateData.availability = availability || null
 
     if (Object.keys(updateData).length === 0) {
       return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 })
@@ -146,6 +197,17 @@ export async function DELETE(
   context: { params: Promise<{ tid: string }> }
 ) {
   try {
+    // Auth check
+    const authHeader = req.headers.get('authorization')
+    if (!authHeader) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    const token = authHeader.split(' ')[1]
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const params = await context.params
     const tid = params.tid
 
@@ -155,18 +217,20 @@ export async function DELETE(
       return NextResponse.json({ error: 'Invalid therapist ID format' }, { status: 400 })
     }
 
-    // First check if therapist exists
-    const { data: existingTherapist, error: fetchError } = await supabase
+    // Fetch therapist to check ownership
+    const { data: therapist, error: fetchError } = await supabase
       .from('therapists')
-      .select('tid')
+      .select('user_id')
       .eq('tid', tid)
       .single()
 
-    if (fetchError && fetchError.code === 'PGRST116') {
+    if (fetchError || !therapist) {
       return NextResponse.json({ error: 'Therapist not found' }, { status: 404 })
     }
 
-    if (fetchError) throw fetchError
+    if (therapist.user_id !== user.id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
 
     const { error } = await supabase
       .from('therapists')

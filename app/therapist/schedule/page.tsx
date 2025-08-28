@@ -1,3 +1,4 @@
+// The schedule page (e.g., app/therapist/schedule/page.tsx)
 import { Suspense } from "react"
 import type { Metadata } from "next"
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
@@ -13,6 +14,27 @@ import AvailabilitySettings from "@/components/therapist/availability-settings"
 export const metadata: Metadata = {
   title: "Schedule - Therapist Portal",
   description: "Manage your appointments and availability",
+}
+
+interface TimeSlot {
+  start: string
+  end: string
+}
+
+interface DayAvailability {
+  isAvailable: boolean
+  timeSlots: TimeSlot[]
+}
+
+interface WeeklyAvailability {
+  monday: DayAvailability
+  tuesday: DayAvailability
+  wednesday: DayAvailability
+  thursday: DayAvailability
+  friday: DayAvailability
+  saturday: DayAvailability
+  sunday: DayAvailability
+  maxHoursPerWeek: number
 }
 
 // Helper function to get sessions data
@@ -38,7 +60,7 @@ async function getTherapistSessions() {
       },
       cache: 'no-store',
     })
-    
+    console.log("Fetch sessions response:", response);
     if (!response.ok) {
       const errorText = await response.text()
       return { error: `API Error: ${response.status}`, data: [] }
@@ -82,27 +104,44 @@ export default async function TherapistSchedulePage() {
     )
   }
 
-  const { error, data: sessionsData } = await getTherapistSessions()
-  
-  // Show error state if there's an issue
-  if (error) {
+  // Fetch therapist data
+  const { data: therapist, error: therapistError } = await supabase
+    .from('therapists')
+    .select('*')
+    .eq('user_id', session.user.id)
+    .single()
+
+  if (therapistError || !therapist) {
     return (
       <div className="text-center py-8">
-        <p className="text-red-500">Error loading appointments: {error}</p>
+        <p className="text-red-500">Error loading therapist data: {therapistError?.message || 'Not found'}</p>
+      </div>
+    )
+  }
+
+  const { error: sessionsError, data: sessionsData } = await getTherapistSessions()
+  
+  // Show error state if there's an issue with sessions
+  if (sessionsError) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-red-500">Error loading appointments: {sessionsError}</p>
       </div>
     )
   }
   
   const appointments = sessionsData.map(transformSessionToAppointment)
-  
-  // Mock availability data - replace with actual availability API call
-  const availability = {
-    weekdays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
-    startTime: '09:00',
-    endTime: '17:00',
-    breaks: [
-      { start: '12:00', end: '13:00', label: 'Lunch Break' }
-    ]
+
+  // Use fetched availability or default
+  const availability: WeeklyAvailability = therapist.availability || {
+    monday: { isAvailable: true, timeSlots: [{ start: '09:00', end: '17:00' }] },
+    tuesday: { isAvailable: true, timeSlots: [{ start: '09:00', end: '17:00' }] },
+    wednesday: { isAvailable: true, timeSlots: [{ start: '09:00', end: '17:00' }] },
+    thursday: { isAvailable: true, timeSlots: [{ start: '09:00', end: '17:00' }] },
+    friday: { isAvailable: true, timeSlots: [{ start: '09:00', end: '17:00' }] },
+    saturday: { isAvailable: false, timeSlots: [] },
+    sunday: { isAvailable: false, timeSlots: [] },
+    maxHoursPerWeek: therapist.availability_hours || 40,
   }
 
   return (
