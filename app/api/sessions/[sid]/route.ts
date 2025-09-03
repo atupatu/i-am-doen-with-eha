@@ -1,14 +1,22 @@
-//apis to edit and delete a session by their sid.
-
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabaseClient'
 
-
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { sid: string } }
+  context: { params: Promise<{ sid: string }> }  // Changed this line
 ) {
-  const sid = parseInt(params.sid)
+  // Minimal auth check
+  const authHeader = req.headers.get('authorization')
+  if (!authHeader?.startsWith('Bearer ')) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+  const { data: { user } } = await supabase.auth.getUser(authHeader.substring(7))
+  if (!user) {
+    return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+  }
+
+  const params = await context.params  // Added this line
+  const sid = parseInt(params.sid)     // Now this works
   const body = await req.json()
 
   if (!sid) return NextResponse.json({ error: 'Session ID missing' }, { status: 400 })
@@ -22,7 +30,7 @@ export async function PATCH(
       .select('sid')
       .eq('tid', tid)
       .eq('scheduled_date', scheduled_date)
-      .neq('sid', sid) // exclude current session
+      .neq('sid', sid)
       .or(`start_time.lte.${end_time},end_time.gte.${start_time}`)
 
     if (conflictError)
@@ -36,6 +44,7 @@ export async function PATCH(
     .from('sessions')
     .update(body)
     .eq('sid', sid)
+    .eq('uid', user.id)
     .select()
     .single()
 
@@ -44,22 +53,32 @@ export async function PATCH(
   return NextResponse.json(data)
 }
 
-
 export async function DELETE(
-    req: NextRequest,
-    { params }: { params: { sid: string } }
-  ) {
-    const sid = params.sid
-  
-    if (!sid) return NextResponse.json({ error: 'Session ID missing' }, { status: 400 })
-  
-    const { error } = await supabase
-      .from('sessions')
-      .delete()
-      .eq('sid', sid)
-  
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  
-    return NextResponse.json({ success: true, message: `Session ${sid} deleted` })
+  req: NextRequest,
+  context: { params: Promise<{ sid: string }> }  // Changed this line
+) {
+  // Minimal auth check
+  const authHeader = req.headers.get('authorization')
+  if (!authHeader?.startsWith('Bearer ')) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
-  
+  const { data: { user } } = await supabase.auth.getUser(authHeader.substring(7))
+  if (!user) {
+    return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+  }
+
+  const params = await context.params  // Added this line
+  const sid = params.sid               // Now this works
+
+  if (!sid) return NextResponse.json({ error: 'Session ID missing' }, { status: 400 })
+
+  const { error } = await supabase
+    .from('sessions')
+    .delete()
+    .eq('sid', sid)
+    .eq('uid', user.id)
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  return NextResponse.json({ success: true, message: `Session ${sid} deleted` })
+}

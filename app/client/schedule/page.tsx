@@ -9,6 +9,7 @@ import { toast } from "@/components/ui/use-toast"
 import { ToastAction } from "@/components/ui/toast"
 import { supabase } from "@/lib/supabaseClient"
 import { format } from "date-fns"
+import BookSessionModal from "@/components/book-session-modal"
 
 interface Therapist {
   name: string
@@ -25,7 +26,33 @@ interface Session {
   verified: boolean
   report_content: string | null
   report_submitted_at: string | null
-  therapists: Therapist | null // Updated to match API response structure
+  therapists: Therapist | null
+}
+
+interface AssignedTherapist {
+  tid: string
+  name: string
+  assignment: {
+    id: string
+    status: string
+    start_date: string
+    end_date: string | null
+    sessions_count: number
+    next_session_date: string | null
+    notes: string | null
+  }
+}
+
+interface Client {
+  uid: string
+  name: string
+}
+
+interface APIResponse {
+  client: Client
+  sessions: Session[]
+  therapists?: AssignedTherapist[]
+  requestedBy: string
 }
 
 interface AppointmentData {
@@ -42,6 +69,8 @@ interface AppointmentData {
 export default function SchedulePage() {
   const [upcomingAppointments, setUpcomingAppointments] = useState<AppointmentData[]>([])
   const [pastAppointments, setPastAppointments] = useState<AppointmentData[]>([])
+  const [assignedTherapists, setAssignedTherapists] = useState<AssignedTherapist[]>([])
+  const [client, setClient] = useState<Client | null>(null)
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
 
@@ -58,7 +87,7 @@ export default function SchedulePage() {
         if (session?.user) {
           setUser(session.user)
           console.log('Current user ID:', session.user.id)
-          await fetchSessions(session.user.id)
+          await fetchSessionsAndTherapists(session.user.id)
         } else {
           console.log('No session found')
           toast({
@@ -81,38 +110,49 @@ export default function SchedulePage() {
     getUser()
   }, [])
 
-  const fetchSessions = async (userId: string) => {
+  const fetchSessionsAndTherapists = async (userId: string) => {
     try {
-      console.log('Fetching sessions for user ID:', userId)
+      console.log('Fetching sessions and therapists for user ID:', userId)
       
       const { data: { session } } = await supabase.auth.getSession()
       if (!session?.access_token) {
         throw new Error('No access token available')
       }
 
-      console.log('Making API call to:', `/api/sessions/client/${userId}`)
-      
-      const response = await fetch(`/api/sessions/client/${userId}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-      })
+      // Updated API call to use the new endpoint with therapists parameter
+     console.log('Making API call to:', `/api/sessions/client/${userId}?therapists=true`);
+
+const response = await fetch(`/api/sessions/client/${userId}?therapists=true`, {
+  method: 'GET',
+  headers: {
+    'Authorization': `Bearer ${session.access_token}`,
+    'Content-Type': 'application/json',
+  },
+});
+
 
       console.log('API Response status:', response.status)
 
       if (!response.ok) {
         const errorData = await response.json()
         console.error('API Error:', errorData)
-        throw new Error(errorData.error || 'Failed to fetch sessions')
+        throw new Error(errorData.error || 'Failed to fetch sessions and therapists')
       }
 
-      const sessions: Session[] = await response.json()
-      console.log('Raw sessions data:', sessions)
+      const data: APIResponse = await response.json()
+      console.log('Raw API response:', data)
+      
+      // Set client info
+      setClient(data.client)
+      
+      // Set assigned therapists if available
+      if (data.therapists) {
+        setAssignedTherapists(data.therapists)
+        console.log('Assigned therapists:', data.therapists)
+      }
       
       // Transform sessions to appointment format
-      const transformedAppointments = sessions.map(session => transformSessionToAppointment(session))
+      const transformedAppointments = data.sessions.map(session => transformSessionToAppointment(session))
       console.log('Transformed appointments:', transformedAppointments)
       
       // Separate upcoming and past appointments
@@ -136,10 +176,10 @@ export default function SchedulePage() {
       setPastAppointments(past)
 
     } catch (error) {
-      console.error('Error fetching sessions:', error)
+      console.error('Error fetching sessions and therapists:', error)
       toast({
         title: "Error",
-        description: "Failed to load your sessions. Please try again.",
+        description: "Failed to load your sessions and therapists. Please try again.",
         variant: "destructive"
       })
     }
@@ -162,7 +202,7 @@ export default function SchedulePage() {
       id: session.sid,
       date: formattedDate,
       time: timeSlot,
-      therapist: therapistName, // Now using actual therapist name
+      therapist: therapistName,
       type: getSessionType(session.status),
       notes: getSessionNotes(session.status),
       report: session.report_content ? `/reports/session_${session.sid}.pdf` : undefined,
@@ -195,65 +235,147 @@ export default function SchedulePage() {
     }
   }
 
-  // Function to handle rescheduling
-  const handleReschedule = async (id: number, newDate: string, newTime: string) => {
-    try {
-      // Here you would typically call an API to update the session
-      // For now, we'll just update the local state
-      setUpcomingAppointments((appointments) =>
-        appointments.map((appointment) =>
-          appointment.id === id ? { ...appointment, date: newDate, time: newTime } : appointment,
-        ),
-      )
-
-      toast({
-        title: "Appointment rescheduled",
-        description: `Your appointment has been rescheduled to ${newDate} at ${newTime}`,
-        variant: "default",
-      })
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to reschedule appointment. Please try again.",
-        variant: "destructive"
-      })
+// Replace your current handleReschedule function with this:
+const handleReschedule = async (id: number, newDate: string, newTime: string) => {
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.access_token) {
+      throw new Error('No access token available')
     }
-  }
 
-  // Function to handle cancellation
-  const handleCancel = (id: number) => {
-    toast({
-      title: "Cancel appointment?",
-      description: "Are you sure you want to cancel this appointment?",
-      variant: "destructive",
-      action: (
-        <ToastAction altText="Confirm" onClick={() => confirmCancel(id)}>
-          Confirm
-        </ToastAction>
+    // Parse the new date and time
+    const [startTime, endTime] = newTime.split(' - ')
+    const scheduledDate = format(new Date(newDate), 'yyyy-MM-dd')
+    
+    // Convert time to 24-hour format for database
+    const formatTimeForDB = (timeStr: string): string => {
+      const time = new Date(`1970-01-01 ${timeStr}`)
+      return format(time, 'HH:mm:ss')
+    }
+
+    const updateData = {
+      scheduled_date: scheduledDate,
+      start_time: formatTimeForDB(startTime),
+      end_time: formatTimeForDB(endTime),
+      status: 'pending'
+    }
+
+    console.log('Updating session with data:', updateData)
+
+    const response = await fetch(`/api/sessions/${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updateData)
+    })
+
+    console.log('Response status:', response.status)
+    
+    if (!response.ok) {
+      const errorData = await response.json()
+      console.error('Update API Error:', errorData)
+      throw new Error(errorData.error || 'Failed to reschedule session')
+    }
+
+    const updatedSession = await response.json()
+    console.log('Session updated successfully:', updatedSession)
+
+    // Update local state
+    setUpcomingAppointments((appointments) =>
+      appointments.map((appointment) =>
+        appointment.id === id 
+          ? { 
+              ...appointment, 
+              date: newDate, 
+              time: newTime, 
+              status: 'pending',
+              type: 'Pending Confirmation',
+              notes: 'Waiting for therapist confirmation'
+            } 
+          : appointment,
       ),
+    )
+
+    toast({
+      title: "Appointment rescheduled",
+      description: `Your appointment has been rescheduled to ${newDate} at ${newTime}. Waiting for therapist confirmation.`,
+      variant: "default",
+    })
+
+  } catch (error) {
+    console.error('Error rescheduling appointment:', error)
+    toast({
+      title: "Error",
+      description: error instanceof Error ? error.message : "Failed to reschedule appointment. Please try again.",
+      variant: "destructive"
     })
   }
+}
 
-  const confirmCancel = async (id: number) => {
-    try {
-      // Here you would typically call an API to cancel the session
-      // For now, we'll just remove from local state
-      setUpcomingAppointments((appointments) => appointments.filter((appointment) => appointment.id !== id))
+// Function to handle cancellation with API integration
+const handleCancel = (id: number) => {
+  toast({
+    title: "Cancel appointment?",
+    description: "Are you sure you want to cancel this appointment? This action cannot be undone.",
+    variant: "destructive",
+    action: (
+      <ToastAction altText="Confirm" onClick={() => confirmCancel(id)}>
+        Confirm
+      </ToastAction>
+    ),
+  })
+}
 
-      toast({
-        title: "Appointment cancelled",
-        description: "Your appointment has been cancelled successfully",
-        variant: "default",
-      })
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to cancel appointment. Please try again.",
-        variant: "destructive"
-      })
+const confirmCancel = async (id: number) => {
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.access_token) {
+      throw new Error('No access token available')
     }
-  }
 
+    console.log('Deleting session with ID:', id)
+
+    const response = await fetch(`/api/sessions/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+    })
+
+    console.log('Delete response status:', response.status)
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      console.error('Delete API Error:', errorData)
+      throw new Error(errorData.error || 'Failed to cancel session')
+    }
+
+    const result = await response.json()
+    console.log('Session deleted successfully:', result)
+
+    // Remove from local state
+    setUpcomingAppointments((appointments) => 
+      appointments.filter((appointment) => appointment.id !== id)
+    )
+
+    toast({
+      title: "Appointment cancelled",
+      description: "Your appointment has been cancelled successfully",
+      variant: "default",
+    })
+
+  } catch (error) {
+    console.error('Error cancelling appointment:', error)
+    toast({
+      title: "Error",
+      description: error instanceof Error ? error.message : "Failed to cancel appointment. Please try again.",
+      variant: "destructive"
+    })
+  }
+}
   if (loading) {
     return (
       <div className="flex min-h-screen flex-col">
@@ -269,6 +391,13 @@ export default function SchedulePage() {
     )
   }
 
+
+  const handleSessionBooked = async () => {
+  // Refresh the sessions data after a new session is booked
+  if (user?.id) {
+    await fetchSessionsAndTherapists(user.id)
+  }
+}
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
@@ -276,8 +405,43 @@ export default function SchedulePage() {
       <main className="flex-1 bg-[#fef6f9]/30">
         <div className="container py-12">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">Your Schedule</h1>
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">
+              {client ? `${client.name}'s Schedule` : 'Your Schedule'}
+            </h1>
             <p className="text-gray-600">Manage your upcoming and past therapy sessions</p>
+            
+            {/* Display assigned therapists */}
+            {assignedTherapists.length > 0 && (
+              <div className="mt-4 p-4 bg-white rounded-lg shadow-sm">
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">Your Assigned Therapists</h3>
+                <div className="grid gap-3">
+                  {assignedTherapists.map((therapist) => (
+                    <div key={therapist.tid} className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
+                      <div>
+                        <p className="font-medium text-gray-800">{therapist.name}</p>
+                        <p className="text-sm text-gray-600">
+                          {therapist.assignment.sessions_count} sessions • Started {new Date(therapist.assignment.start_date).toLocaleDateString()}
+                        </p>
+                        {therapist.assignment.next_session_date && (
+                          <p className="text-xs text-gray-500">
+                            Next session: {new Date(therapist.assignment.next_session_date).toLocaleDateString()}
+                          </p>
+                        )}
+                      </div>
+                      <div className="text-sm">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          therapist.assignment.status === 'active' 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {therapist.assignment.status}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <Tabs defaultValue="upcoming" className="w-full">
@@ -310,17 +474,27 @@ export default function SchedulePage() {
               ) : (
                 <div className="text-center py-12 bg-white rounded-lg shadow-sm">
                   <p className="text-gray-500 mb-4">You have no upcoming appointments</p>
-                  <Button className="bg-[#a98cc8] hover:bg-purple-700 text-white px-8 py-4 rounded-xl">
-                    Book Your First Session
-                  </Button>
+                  <BookSessionModal 
+  assignedTherapists={assignedTherapists} 
+  onSessionBooked={handleSessionBooked}
+>
+  <Button className="bg-[#a98cc8] hover:bg-[#9678b4] text-white px-8 py-4 rounded-xl">
+    Book Your First Session
+  </Button>
+</BookSessionModal>
                 </div>
               )}
 
               {upcomingAppointments.length > 0 && (
                 <div className="text-center mt-8">
-                  <Button className="bg-[#a98cc8] hover:bg-purple-700 text-white px-8 py-6 rounded-xl">
-                    Book New Session
-                  </Button>
+                  <BookSessionModal 
+  assignedTherapists={assignedTherapists} 
+  onSessionBooked={handleSessionBooked}
+>
+  <Button className="bg-[#a98cc8] hover:bg-[#9678b4] text-white px-8 py-6 rounded-xl">
+    Book New Session
+  </Button>
+</BookSessionModal>
                 </div>
               )}
             </TabsContent>

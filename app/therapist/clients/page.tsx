@@ -27,7 +27,7 @@ export default async function TherapistClientsPage() {
   }
 
   // Fetch clients using the email
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/uniClients?email=${user.email}`, {
+  const res = await fetch(`http://localhost:3000/api/uniClients?email=${user.email}`, {
     cache: "no-store",
   });
   console.log("Fetch clients response:", res);
