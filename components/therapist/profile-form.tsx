@@ -1,100 +1,74 @@
+//components/therapist/profile-form.tsx
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { updateTherapistProfile } from "@/lib/therapist-actions"
-
-interface Education {
-  degree: string
-  institution: string
-  year: string
-}
-
-interface Certification {
-  name: string
-  issuer: string
-  year: string
-}
 
 interface ProfileFormProps {
   profile: {
-    id: number
+    tid: string
     name: string
     email: string
-    phone: string
-    specialty: string
-    experience: string
-    education: Education[]
-    certifications: Certification[]
-    bio: string
+    education?: string
+    bio?: string
+    languages?: string
+    areas_covered?: string
+    image?: string
+    Why_counselling?: string
+    One_thing?: string
+    expect?: string
+    selfcare_tips?: string
   }
 }
 
 export default function ProfileForm({ profile }: ProfileFormProps) {
-  const [name, setName] = useState(profile.name)
-  const [email, setEmail] = useState(profile.email)
-  const [phone, setPhone] = useState(profile.phone)
-  const [specialty, setSpecialty] = useState(profile.specialty)
-  const [experience, setExperience] = useState(profile.experience)
-  const [bio, setBio] = useState(profile.bio)
-  const [education, setEducation] = useState<Education[]>(profile.education)
-  const [certifications, setCertifications] = useState<Certification[]>(profile.certifications)
+  const [name, setName] = useState(profile.name || "")
+  const [email, setEmail] = useState(profile.email || "")
+  const [education, setEducation] = useState(profile.education || "")
+  const [bio, setBio] = useState(profile.bio || "")
+  const [languages, setLanguages] = useState(profile.languages || "")
+  const [areasCovered, setAreasCovered] = useState(profile.areas_covered || "")
+  const [whyCounselling, setWhyCounselling] = useState(profile.Why_counselling || "")
+  const [oneThing, setOneThing] = useState(profile.One_thing || "")
+  const [expect, setExpect] = useState(profile.expect || "")
+  const [selfcareTips, setSelfcareTips] = useState(profile.selfcare_tips || "")
   const [isSubmitting, setIsSubmitting] = useState(false)
-
-  const handleAddEducation = () => {
-    setEducation([...education, { degree: "", institution: "", year: "" }])
-  }
-
-  const handleRemoveEducation = (index: number) => {
-    const newEducation = [...education]
-    newEducation.splice(index, 1)
-    setEducation(newEducation)
-  }
-
-  const handleEducationChange = (index: number, field: keyof Education, value: string) => {
-    const newEducation = [...education]
-    newEducation[index][field] = value
-    setEducation(newEducation)
-  }
-
-  const handleAddCertification = () => {
-    setCertifications([...certifications, { name: "", issuer: "", year: "" }])
-  }
-
-  const handleRemoveCertification = (index: number) => {
-    const newCertifications = [...certifications]
-    newCertifications.splice(index, 1)
-    setCertifications(newCertifications)
-  }
-
-  const handleCertificationChange = (index: number, field: keyof Certification, value: string) => {
-    const newCertifications = [...certifications]
-    newCertifications[index][field] = value
-    setCertifications(newCertifications)
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
 
     try {
-      await updateTherapistProfile({
-        id: profile.id,
+      const updateData = {
         name,
         email,
-        phone,
-        specialty,
-        experience,
-        bio,
         education,
-        certifications,
+        bio,
+        languages,
+        areas_covered: areasCovered,
+        Why_counselling: whyCounselling,
+        One_thing: oneThing,
+        expect,
+        selfcare_tips: selfcareTips,
+      }
+
+      const response = await fetch(`/api/therapists/${profile.tid}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updateData),
       })
+
+      if (!response.ok) {
+        throw new Error('Failed to update profile')
+      }
+
       alert("Profile updated successfully!")
     } catch (error) {
       console.error("Error updating profile:", error)
@@ -108,7 +82,7 @@ export default function ProfileForm({ profile }: ProfileFormProps) {
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="flex items-center gap-4">
         <Avatar className="h-20 w-20">
-          <AvatarImage src="/placeholder.svg?height=80&width=80" alt={name} />
+          <AvatarImage src={profile.image || "/placeholder.svg?height=80&width=80"} alt={name} />
           <AvatarFallback>
             {name
               .split(" ")
@@ -118,7 +92,7 @@ export default function ProfileForm({ profile }: ProfileFormProps) {
         </Avatar>
         <div>
           <h3 className="text-lg font-medium">{name}</h3>
-          <p className="text-sm text-gray-500">{specialty}</p>
+          <p className="text-sm text-gray-500">{areasCovered}</p>
           <Button type="button" variant="outline" size="sm" className="mt-2">
             Change Photo
           </Button>
@@ -128,7 +102,13 @@ export default function ProfileForm({ profile }: ProfileFormProps) {
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="name">Full Name</Label>
-          <Input id="name" value={name} onChange={(e) => setName(e.target.value)} className="rounded-xl" required />
+          <Input 
+            id="name" 
+            value={name} 
+            onChange={(e) => setName(e.target.value)} 
+            className="rounded-xl" 
+            required 
+          />
         </div>
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
@@ -142,36 +122,36 @@ export default function ProfileForm({ profile }: ProfileFormProps) {
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="phone">Phone</Label>
+          <Label htmlFor="languages">Languages</Label>
           <Input
-            id="phone"
-            type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            id="languages"
+            value={languages}
+            onChange={(e) => setLanguages(e.target.value)}
             className="rounded-xl"
-            required
+            placeholder="e.g., English, Spanish, French"
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="specialty">Specialty</Label>
+          <Label htmlFor="areasCovered">Areas of Expertise</Label>
           <Input
-            id="specialty"
-            value={specialty}
-            onChange={(e) => setSpecialty(e.target.value)}
+            id="areasCovered"
+            value={areasCovered}
+            onChange={(e) => setAreasCovered(e.target.value)}
             className="rounded-xl"
-            required
+            placeholder="e.g., Anxiety, Depression, CBT"
           />
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="experience">Experience</Label>
-          <Input
-            id="experience"
-            value={experience}
-            onChange={(e) => setExperience(e.target.value)}
-            className="rounded-xl"
-            required
-          />
-        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="education">Education</Label>
+        <Textarea
+          id="education"
+          value={education}
+          onChange={(e) => setEducation(e.target.value)}
+          className="rounded-xl min-h-[100px]"
+          placeholder="List your educational background, degrees, and institutions"
+        />
       </div>
 
       <div className="space-y-2">
@@ -181,128 +161,52 @@ export default function ProfileForm({ profile }: ProfileFormProps) {
           value={bio}
           onChange={(e) => setBio(e.target.value)}
           className="rounded-xl min-h-[150px]"
-          required
+          placeholder="Describe your professional background and approach to therapy"
         />
       </div>
 
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-medium">Education</h3>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleAddEducation}
-            className="text-[#a98cc8] border-[#a98cc8] hover:bg-[#a98cc8]/10"
-          >
-            Add Education
-          </Button>
-        </div>
-        {education.map((edu, index) => (
-          <div key={index} className="border rounded-lg p-4 space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor={`degree-${index}`}>Degree</Label>
-                <Input
-                  id={`degree-${index}`}
-                  value={edu.degree}
-                  onChange={(e) => handleEducationChange(index, "degree", e.target.value)}
-                  className="rounded-xl"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor={`institution-${index}`}>Institution</Label>
-                <Input
-                  id={`institution-${index}`}
-                  value={edu.institution}
-                  onChange={(e) => handleEducationChange(index, "institution", e.target.value)}
-                  className="rounded-xl"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor={`year-${index}`}>Year</Label>
-                <Input
-                  id={`year-${index}`}
-                  value={edu.year}
-                  onChange={(e) => handleEducationChange(index, "year", e.target.value)}
-                  className="rounded-xl"
-                  required
-                />
-              </div>
-            </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => handleRemoveEducation(index)}
-              className="text-red-500 hover:text-red-700 hover:bg-red-50"
-            >
-              Remove
-            </Button>
-          </div>
-        ))}
+      <div className="space-y-2">
+        <Label htmlFor="whyCounselling">Why Counselling?</Label>
+        <Textarea
+          id="whyCounselling"
+          value={whyCounselling}
+          onChange={(e) => setWhyCounselling(e.target.value)}
+          className="rounded-xl min-h-[100px]"
+          placeholder="Explain your philosophy and approach to counselling"
+        />
       </div>
 
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-medium">Certifications</h3>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleAddCertification}
-            className="text-[#a98cc8] border-[#a98cc8] hover:bg-[#a98cc8]/10"
-          >
-            Add Certification
-          </Button>
-        </div>
-        {certifications.map((cert, index) => (
-          <div key={index} className="border rounded-lg p-4 space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor={`cert-name-${index}`}>Certification Name</Label>
-                <Input
-                  id={`cert-name-${index}`}
-                  value={cert.name}
-                  onChange={(e) => handleCertificationChange(index, "name", e.target.value)}
-                  className="rounded-xl"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor={`cert-issuer-${index}`}>Issuing Organization</Label>
-                <Input
-                  id={`cert-issuer-${index}`}
-                  value={cert.issuer}
-                  onChange={(e) => handleCertificationChange(index, "issuer", e.target.value)}
-                  className="rounded-xl"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor={`cert-year-${index}`}>Year</Label>
-                <Input
-                  id={`cert-year-${index}`}
-                  value={cert.year}
-                  onChange={(e) => handleCertificationChange(index, "year", e.target.value)}
-                  className="rounded-xl"
-                  required
-                />
-              </div>
-            </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => handleRemoveCertification(index)}
-              className="text-red-500 hover:text-red-700 hover:bg-red-50"
-            >
-              Remove
-            </Button>
-          </div>
-        ))}
+      <div className="space-y-2">
+        <Label htmlFor="oneThing">One Thing You Want Clients to Know</Label>
+        <Textarea
+          id="oneThing"
+          value={oneThing}
+          onChange={(e) => setOneThing(e.target.value)}
+          className="rounded-xl min-h-[100px]"
+          placeholder="What's one important thing you want your clients to know about you or your practice?"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="expect">What Clients Can Expect</Label>
+        <Textarea
+          id="expect"
+          value={expect}
+          onChange={(e) => setExpect(e.target.value)}
+          className="rounded-xl min-h-[100px]"
+          placeholder="Describe what clients can expect from working with you"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="selfcareTips">Self-Care Tips</Label>
+        <Textarea
+          id="selfcareTips"
+          value={selfcareTips}
+          onChange={(e) => setSelfcareTips(e.target.value)}
+          className="rounded-xl min-h-[100px]"
+          placeholder="Share some self-care tips you recommend to clients"
+        />
       </div>
 
       <Button type="submit" className="bg-[#a98cc8] hover:bg-[#9678b4]" disabled={isSubmitting}>

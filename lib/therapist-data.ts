@@ -1,6 +1,6 @@
 // This file contains mock data functions for the therapist portal
 // In a real app, these would fetch data from your API/database
-
+//lib/therapist-data.ts
 export async function getTherapistData() {
     // Simulate API call delay
     await new Promise((resolve) => setTimeout(resolve, 300))

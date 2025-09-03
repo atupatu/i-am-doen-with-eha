@@ -1,6 +1,112 @@
 // app/api/therapists/[tid]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabaseClient'
+
+export async function GET(
+  req: NextRequest,
+  context: { params: Promise<{ tid: string }> }
+) {
+  try {
+    const params = await context.params;
+    const tid = params.tid;
+
+    // Fetch therapist details - removed authentication check for public viewing
+    const { data: therapist, error: fetchError } = await supabase
+      .from('therapists')
+      .select(`
+        tid,
+        name,
+        email,
+        education,
+        bio,
+        areas_covered,
+        languages,
+        Why_counselling,
+        One_thing,
+        expect,
+        selfcare_tips,
+        image_data
+      `)
+      .eq('tid', tid)
+      .single()
+
+    if (fetchError) {
+      if (fetchError.code === 'PGRST116') {
+        return NextResponse.json({ error: 'Therapist not found' }, { status: 404 })
+      }
+      throw fetchError
+    }
+
+    // Convert image data to base64 if it exists
+    let imageUrl = null;
+    if (therapist.image_data) {
+      // Convert bytea to base64 string
+      const base64String = Buffer.from(therapist.image_data).toString('base64');
+      imageUrl = `data:image/jpeg;base64,${base64String}`;
+    }
+
+    // Return therapist data with processed image
+    const therapistData = {
+      ...therapist,
+      image: imageUrl || '/images/therapist_placeholder.jpg'
+    };
+
+    return NextResponse.json({ therapist: therapistData }, { status: 200 })
+  } catch (error: any) {
+    console.error('Error fetching therapist:', error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+}
+
+export async function PUT(
+  req: NextRequest,
+  context: { params: Promise<{ tid: string }> }
+) {
+  try {
+    const params = await context.params;
+    const tid = params.tid;
+    
+    const updateData = await req.json();
+    
+    // Validate required fields
+    if (!updateData.name || !updateData.email) {
+      return NextResponse.json({ error: 'Name and email are required' }, { status: 400 })
+    }
+
+    // Update therapist profile in database
+    const { data: updatedTherapist, error: updateError } = await supabase
+      .from('therapists')
+      .update({
+        name: updateData.name,
+        email: updateData.email,
+        education: updateData.education,
+        bio: updateData.bio,
+        languages: updateData.languages,
+        areas_covered: updateData.areas_covered,
+        Why_counselling: updateData.Why_counselling,
+        One_thing: updateData.One_thing,
+        expect: updateData.expect,
+        selfcare_tips: updateData.selfcare_tips,
+      })
+      .eq('tid', tid)
+      .select()
+      .single()
+
+    if (updateError) {
+      console.error('Error updating therapist:', updateError)
+      return NextResponse.json({ error: updateError.message }, { status: 500 })
+    }
+
+    return NextResponse.json({ 
+      message: 'Profile updated successfully', 
+      therapist: updatedTherapist 
+    }, { status: 200 })
+
+  } catch (error: any) {
+    console.error('Error updating therapist profile:', error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+}
 {/* 
 export async function GET(
   req: NextRequest,
@@ -56,6 +162,7 @@ export async function GET(
   }
 }
 */}
+{/* 
 export async function GET(
   req: NextRequest,
   context: { params: Promise<{ tid: string }> }
@@ -109,7 +216,7 @@ export async function GET(
     console.error('Error fetching therapist:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
-}
+}*/}
 export async function DELETE(
   req: NextRequest,
   context: { params: Promise<{ tid: string }> }
