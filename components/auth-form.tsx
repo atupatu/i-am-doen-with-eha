@@ -232,86 +232,138 @@ export default function AuthForm() {
 
   // Handle sign in
   const handleSignIn = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    const form = new FormData(event.currentTarget)
-    const email = form.get("email") as string
-    const password = form.get("password") as string
+  event.preventDefault()
+  const form = new FormData(event.currentTarget)
+  const email = form.get("email") as string
+  const password = form.get("password") as string
 
-    setLoading(true)
-    setError(null)
-    
-    try {
-      const { error } = await supabase.auth.signInWithPassword({ 
-        email, 
-        password 
-      })
+  setLoading(true)
+  setError(null)
+  
+  try {
+    const { error, data } = await supabase.auth.signInWithPassword({ 
+      email, 
+      password 
+    })
 
-      if (error) {
-        setError(error.message)
+    if (error) {
+      setError(error.message)
+    } else {
+      // ✅ Get logged-in user ID
+      const userId = data.user?.id
+      if (userId) {
+        // 🔑 Fetch user role from Supabase
+        const { data: roleData, error: roleError } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", userId)
+          .single()
+
+        if (roleError || !roleData) {
+          console.error("Could not fetch user role", roleError)
+          router.push("/") // fallback
+          return
+        }
+
+        const role = roleData.role
+        // ✅ Redirect based on role
+        if (role === "client") {
+          router.push("/client/schedule")
+        } else if (role === "therapist") {
+          router.push("/therapist/")
+        } else if (role === "admin") {
+          router.push("/admin/dashboard")
+        } else {
+          router.push("/") // fallback
+        }
       } else {
-        // This will trigger a refresh of the server-side auth state
-        router.refresh()
-        router.push("/client/schedule")
+        router.push("/") // fallback if no user found
       }
-    } catch (err) {
-      setError("An unexpected error occurred")
-    } finally {
-      setLoading(false)
     }
+  } catch (err) {
+    setError("An unexpected error occurred")
+  } finally {
+    setLoading(false)
   }
+}
+
 
   // Handle sign up
   const handleSignUp = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    const form = new FormData(event.currentTarget)
-    const email = form.get("email") as string
-    const password = form.get("password") as string
-    const confirmPassword = form.get("confirmPassword") as string
+  event.preventDefault()
+  const form = new FormData(event.currentTarget)
+  const email = form.get("email") as string
+  const password = form.get("password") as string
+  const confirmPassword = form.get("confirmPassword") as string
 
-    if (password !== confirmPassword) {
-      setError("Passwords do not match.")
-      return
-    }
+  if (password !== confirmPassword) {
+    setError("Passwords do not match.")
+    return
+  }
 
-    setLoading(true)
-    setError(null)
-    
-    try {
-      const { error, data } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/account/onboarding`
-        }
-      })
+  setLoading(true)
+  setError(null)
+  
+  try {
+    const { error, data } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/account/onboarding`,
+      },
+    })
 
-      if (error) {
-        if (
-          error.message.toLowerCase().includes("already registered") || 
-          error.message.toLowerCase().includes("email already") ||
-          error.message.toLowerCase().includes("already taken") ||
-          error.message.toLowerCase().includes("already exists") ||
-          error.message.toLowerCase().includes("user exists")
-        ) {
-          setAlreadyRegistered(true)
-          setRegisteredEmail(email)
-        } else {
-          setError(error.message)
-        }
+    if (error) {
+      if (
+        error.message.toLowerCase().includes("already registered") ||
+        error.message.toLowerCase().includes("email already") ||
+        error.message.toLowerCase().includes("already taken") ||
+        error.message.toLowerCase().includes("already exists") ||
+        error.message.toLowerCase().includes("user exists")
+      ) {
+        setAlreadyRegistered(true)
+        setRegisteredEmail(email)
       } else {
-        if (data?.user?.identities?.length === 0) {
-          setAlreadyRegistered(true)
-          setRegisteredEmail(email)
+        setError(error.message)
+      }
+    } else {
+      // ✅ If email confirmation is not required OR user is already confirmed, redirect by role immediately
+      if (data.user && !data.session?.expires_at) {
+        // Show verify email message if confirmation is required
+        setShowVerifyMessage(true)
+      } else if (data.user) {
+        // User already has a session, fetch their role and redirect
+        const userId = data.user.id
+        const { data: roleData, error: roleError } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", userId)
+          .single()
+
+        if (roleError || !roleData) {
+          console.error("Could not fetch user role", roleError)
+          router.push("/account/onboarding") // fallback if no role yet
         } else {
-          setShowVerifyMessage(true)
+          const role = roleData.role
+          if (role === "client") {
+            router.push("/client/schedule")
+          } else if (role === "therapist") {
+            router.push("/therapist")
+          } else if (role === "admin") {
+            router.push("/admin/dashboard")
+          } else {
+            router.push("/account/onboarding")
+          }
         }
       }
-    } catch (err) {
-      setError("An unexpected error occurred")
-    } finally {
-      setLoading(false)
     }
+  } catch (err) {
+    setError("An unexpected error occurred")
+  } finally {
+    setLoading(false)
   }
+}
+
 
   const handleSwitchToSignIn = () => {
     setActiveTab("signin")

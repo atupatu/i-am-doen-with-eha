@@ -16,10 +16,30 @@ export default async function AccountPage() {
   const supabase = createServerComponentClient({ cookies })
   const { data: { session } } = await supabase.auth.getSession()
 
-  // CHANGE: This block is now active.
-  // If a user is already logged in, they will be redirected away from this page.
   if (session) {
-    redirect("/client/schedule")
+    // 🔑 Get user role from Supabase
+    const { data: roleData, error } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", session.user.id)
+      .single()
+
+    if (!error && roleData) {
+      const role = roleData.role
+      console.log("User role:", role);
+
+      // ✅ Redirect based on role
+      if (role === "client") {
+        redirect("/client")
+      } else if (role === "therapist") {
+        redirect("/therapist")
+      } else if (role === "admin") {
+        redirect("/admin")
+      }
+    }
+
+    // If no role found, fallback
+    redirect("/")
   }
 
   return (
