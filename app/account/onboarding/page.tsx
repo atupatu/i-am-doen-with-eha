@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -11,13 +11,74 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Phone, FileText, ChevronRight, ChevronLeft } from "lucide-react"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import PropTypes from "prop-types"
+
+// Define TypeScript interfaces for props
+interface FormData {
+  seniorName?: string;
+  preferredName?: string;
+  diagnosis?: string;
+  otherDiagnosis?: string;
+  timeSlots?: string;
+  address?: string;
+  language?: string;
+  otherLanguage?: string;
+  dob?: string;
+  birthPlace?: string;
+  family?: string;
+  educationHistory?: string;
+  workHistory?: string;
+  spouseName?: string;
+  meetingDetails?: string;
+  children?: string;
+  grandchildren?: string;
+  historicalEvent?: string;
+  hobbies?: string;
+  currentEnjoyment?: string;
+  readingPreferences?: string;
+  favColor?: string;
+  musicTaste?: string;
+  favFood?: string;
+  routine?: string;
+  carerName?: string;
+  carerPhone?: string;
+  invoiceEmail?: string;
+  payerPhone?: string;
+}
+
+interface ProgressBarProps {
+  currentStep: number;
+  totalSteps: number;
+}
+
+interface MethodSelectionProps {
+  preferredMethod: "call" | "form";
+  setPreferredMethod: (value: "call" | "form") => void;
+  nextStep: () => void;
+}
+
+interface BasicInformationProps {
+  handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  handleSelectChange: (name: string, value: string) => void;
+  formData: FormData;
+}
+
+interface PersonalHistoryProps {
+  handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  formData: FormData;
+}
+
+interface PreferencesAndContactProps {
+  handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  formData: FormData;
+}
 
 // Main component
 export default function OnboardingForm() {
   const [preferredMethod, setPreferredMethod] = useState<"call" | "form">("form")
-  const [currentStep, setCurrentStep] = useState(0)
-  const [formData, setFormData] = useState({})
-  const [isRequestingCall, setIsRequestingCall] = useState(false)
+  const [currentStep, setCurrentStep] = useState<number>(0)
+  const [formData, setFormData] = useState<FormData>({})
+  const [isRequestingCall, setIsRequestingCall] = useState<boolean>(false)
   const [uid, setUid] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
@@ -49,18 +110,18 @@ export default function OnboardingForm() {
   }, [router, supabase])
 
   // Handle input changes
-  const handleInputChange = (e) => {
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
-  }
+  }, [])
 
   // Handle select changes
-  const handleSelectChange = (name, value) => {
+  const handleSelectChange = useCallback((name: string, value: string) => {
     setFormData(prev => ({ ...prev, [name]: value }))
-  }
+  }, [])
 
   // Handle form submission
-  const handleSubmit = async (e) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError(null)
     if (!uid) {
@@ -80,27 +141,27 @@ export default function OnboardingForm() {
     } catch (err) {
       setError("Failed to submit form. Please try again.")
     }
-  }
+  }, [uid, formData, router])
 
   // Handle request call button click
-  const handleRequestCall = () => {
+  const handleRequestCall = useCallback(() => {
     setIsRequestingCall(true)
-  }
+  }, [])
 
   // Navigate between form steps
-  const nextStep = () => {
+  const nextStep = useCallback(() => {
     if (currentStep < totalSteps - 1) {
       setCurrentStep(currentStep + 1)
       window.scrollTo(0, 0)
     }
-  }
+  }, [currentStep, totalSteps])
 
-  const prevStep = () => {
+  const prevStep = useCallback(() => {
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1)
       window.scrollTo(0, 0)
     }
-  }
+  }, [currentStep])
 
   useEffect(() => {
     if (preferredMethod === "call" || isRequestingCall) {
@@ -200,7 +261,7 @@ export default function OnboardingForm() {
                       variant="outline"
                       className="border-[#a98cc8] text-[#a98cc8] hover:bg-[#a98cc8] hover:text-white flex items-center mx-auto"
                     >
-                      <Phone className="h-4 w-4 mr-2" />
+                      <Phone className="h-4 w-4 mr-2" aria-hidden="true" />
                       Request a call instead
                     </Button>
                   </div>
@@ -215,7 +276,7 @@ export default function OnboardingForm() {
                   variant="outline"
                   className="flex items-center px-5"
                 >
-                  <ChevronLeft className="h-4 w-4 mr-1" /> Previous
+                  <ChevronLeft className="h-4 w-4 mr-1" aria-hidden="true" /> Previous
                 </Button>
 
                 {currentStep < totalSteps - 1 ? (
@@ -224,7 +285,7 @@ export default function OnboardingForm() {
                     onClick={nextStep} 
                     className="bg-[#a98cc8] hover:bg-[#9678b4] text-white flex items-center px-5"
                   >
-                    Next <ChevronRight className="h-4 w-4 ml-1" />
+                    Next <ChevronRight className="h-4 w-4 ml-1" aria-hidden="true" />
                   </Button>
                 ) : (
                   <Button 
@@ -241,7 +302,7 @@ export default function OnboardingForm() {
           {/* Loading State for Call option */}
           {(preferredMethod === "call" || isRequestingCall) && (
             <div className="text-center py-12 animate-fadeIn">
-              <Phone className="h-12 w-12 text-[#a98cc8] mx-auto mb-4" />
+              <Phone className="h-12 w-12 text-[#a98cc8] mx-auto mb-4" aria-hidden="true" />
               <h3 className="text-xl font-semibold text-gray-800">Signing you in...</h3>
               <p className="text-gray-600 mt-2">You'll be redirected to your schedule. Our team will call you shortly.</p>
             </div>
@@ -252,8 +313,12 @@ export default function OnboardingForm() {
   )
 }
 
+OnboardingForm.propTypes = {
+  // No props are passed to OnboardingForm, so no PropTypes needed here
+}
+
 // Progress Bar Component
-function ProgressBar({ currentStep, totalSteps }) {
+function ProgressBar({ currentStep, totalSteps }: ProgressBarProps) {
   const progress = ((currentStep + 1) / totalSteps) * 100
   
   return (
@@ -266,20 +331,25 @@ function ProgressBar({ currentStep, totalSteps }) {
   )
 }
 
+ProgressBar.propTypes = {
+  currentStep: PropTypes.number.isRequired,
+  totalSteps: PropTypes.number.isRequired,
+}
+
 // Method Selection Component
-function MethodSelection({ preferredMethod, setPreferredMethod, nextStep }) {
+function MethodSelection({ preferredMethod, setPreferredMethod, nextStep }: MethodSelectionProps) {
   return (
     <div className="animate-fadeIn">
       <h2 className="text-lg font-medium mb-6">How would you like to provide information?</h2>
       <RadioGroup
         defaultValue={preferredMethod}
         className="grid grid-cols-1 md:grid-cols-2 gap-6"
-        onValueChange={(value) => setPreferredMethod(value as "call" | "form")}
+        onValueChange={(value: "call" | "form") => setPreferredMethod(value)}
       >
         <div className={`border rounded-xl p-5 cursor-pointer transition-all ${preferredMethod === "call" ? "border-[#a98cc8] bg-[#a98cc8]/5" : "border-gray-200 hover:border-[#a98cc8]/50"}`}>
           <RadioGroupItem value="call" id="call" className="sr-only" />
           <Label htmlFor="call" className="flex items-start cursor-pointer">
-            <Phone className="h-6 w-6 text-[#a98cc8] mt-0.5 mr-4" />
+            <Phone className="h-6 w-6 text-[#a98cc8] mt-0.5 mr-4" aria-hidden="true" />
             <div>
               <span className="font-medium block mb-2">Request a Call</span>
               <span className="text-sm text-gray-500">Our team will call you to collect all necessary information</span>
@@ -290,7 +360,7 @@ function MethodSelection({ preferredMethod, setPreferredMethod, nextStep }) {
         <div className={`border rounded-xl p-5 cursor-pointer transition-all ${preferredMethod === "form" ? "border-[#a98cc8] bg-[#a98cc8]/5" : "border-gray-200 hover:border-[#a98cc8]/50"}`}>
           <RadioGroupItem value="form" id="form" className="sr-only" />
           <Label htmlFor="form" className="flex items-start cursor-pointer">
-            <FileText className="h-6 w-6 text-[#a98cc8] mt-0.5 mr-4" />
+            <FileText className="h-6 w-6 text-[#a98cc8] mt-0.5 mr-4" aria-hidden="true" />
             <div>
               <span className="font-medium block mb-2">Complete the Form</span>
               <span className="text-sm text-gray-500">Fill out our comprehensive form with all details</span>
@@ -306,7 +376,7 @@ function MethodSelection({ preferredMethod, setPreferredMethod, nextStep }) {
             onClick={nextStep} 
             className="bg-[#a98cc8] hover:bg-[#9678b4] text-white flex items-center px-5"
           >
-            Next <ChevronRight className="h-4 w-4 ml-1" />
+            Next <ChevronRight className="h-4 w-4 ml-1" aria-hidden="true" />
           </Button>
         </div>
       )}
@@ -314,8 +384,14 @@ function MethodSelection({ preferredMethod, setPreferredMethod, nextStep }) {
   )
 }
 
+MethodSelection.propTypes = {
+  preferredMethod: PropTypes.oneOf(["call", "form"]).isRequired,
+  setPreferredMethod: PropTypes.func.isRequired,
+  nextStep: PropTypes.func.isRequired,
+}
+
 // Basic Information Component
-function BasicInformation({ handleInputChange, handleSelectChange, formData }) {
+function BasicInformation({ handleInputChange, handleSelectChange, formData }: BasicInformationProps) {
   return (
     <div className="space-y-5 animate-fadeIn">
       <h2 className="text-lg font-medium mb-5">Step 1: Basic Information</h2>
@@ -351,7 +427,7 @@ function BasicInformation({ handleInputChange, handleSelectChange, formData }) {
           name="diagnosis" 
           required
           value={formData.diagnosis || ""}
-          onValueChange={(value) => handleSelectChange("diagnosis", value)}
+          onValueChange={(value: string) => handleSelectChange("diagnosis", value)}
         >
           <SelectTrigger className="rounded-xl">
             <SelectValue placeholder="Select diagnosis" />
@@ -411,7 +487,7 @@ function BasicInformation({ handleInputChange, handleSelectChange, formData }) {
           name="language" 
           required
           value={formData.language || ""}
-          onValueChange={(value) => handleSelectChange("language", value)}
+          onValueChange={(value: string) => handleSelectChange("language", value)}
         >
           <SelectTrigger className="rounded-xl">
             <SelectValue placeholder="Select preferred language" />
@@ -447,8 +523,14 @@ function BasicInformation({ handleInputChange, handleSelectChange, formData }) {
   )
 }
 
+BasicInformation.propTypes = {
+  handleInputChange: PropTypes.func.isRequired,
+  handleSelectChange: PropTypes.func.isRequired,
+  formData: PropTypes.object.isRequired,
+}
+
 // Personal History Component
-function PersonalHistory({ handleInputChange, formData }) {
+function PersonalHistory({ handleInputChange, formData }: PersonalHistoryProps) {
   return (
     <div className="space-y-5 animate-fadeIn">
       <h2 className="text-lg font-medium mb-5">Step 2: Personal History</h2>
@@ -571,8 +653,13 @@ function PersonalHistory({ handleInputChange, formData }) {
   )
 }
 
+PersonalHistory.propTypes = {
+  handleInputChange: PropTypes.func.isRequired,
+  formData: PropTypes.object.isRequired,
+}
+
 // Preferences and Contact Component
-function PreferencesAndContact({ handleInputChange, formData }) {
+function PreferencesAndContact({ handleInputChange, formData }: PreferencesAndContactProps) {
   return (
     <div className="space-y-5 animate-fadeIn">
       <h2 className="text-lg font-medium mb-5">Step 3: Preferences & Contact Information</h2>
@@ -704,4 +791,9 @@ function PreferencesAndContact({ handleInputChange, formData }) {
       </div>
     </div>
   )
+}
+
+PreferencesAndContact.propTypes = {
+  handleInputChange: PropTypes.func.isRequired,
+  formData: PropTypes.object.isRequired,
 }

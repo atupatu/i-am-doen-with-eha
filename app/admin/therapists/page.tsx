@@ -1,19 +1,17 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import {ArrowUpDown, 
-  Calendar, 
-  ChevronDown,  // Make sure this is included
-  Download, 
-  Edit, 
-  Filter, 
-  MoreHorizontal, 
-  Search, 
-  UserCog  } from "lucide-react"
-import { AdminHeader } from "@/components/admin/header"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
+import { useState, useEffect } from "react";
+import { ArrowUpDown, ChevronDown, Download, Filter, Search } from "lucide-react";
+import { AdminHeader } from "@/components/admin/header";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,15 +19,19 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from"@/components/ui/dropdown-menu"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-
-//api integration for post method:
-import { AddTherapistDialog } from "@/components/therapist/AddTherapistDialog"
-//api integration for patch method:
-import { TherapistActions } from "@/components/therapist/TherapistActions"
+} from "@/components/ui/dropdown-menu";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { AddTherapistDialog } from "@/components/therapist/AddTherapistDialog";
+import { TherapistActions } from "@/components/therapist/TherapistActions";
 
 interface Therapist {
   tid: string;
@@ -39,100 +41,116 @@ interface Therapist {
   availability_hours: number | null;
   created_at: string;
   user_id: string | null;
-  status?: string;
-  clients?: number;
+  status: string;
+  clients: number;
+  earnings: string;
 }
 
 export default function TherapistsPage() {
-  const [filterStatus, setFilterStatus] = useState("all")
-  const [searchQuery, setSearchQuery] = useState("")
-  const [therapists, setTherapists] = useState<Therapist[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [therapists, setTherapists] = useState<Therapist[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Fetch therapists from API
   useEffect(() => {
+    let isMounted = true;
+
     const fetchTherapists = async () => {
       try {
-        setLoading(true)
-        const response = await fetch('/api/therapists')
+        if (!isMounted) return;
+        setLoading(true);
+        const response = await fetch("/api/therapists");
         if (!response.ok) {
-          throw new Error('Failed to fetch therapists')
+          throw new Error("Failed to fetch therapists");
         }
-        const data = await response.json()
-        
-        const transformedTherapists = data.therapists.map((therapist: Therapist) => ({
-          ...therapist,
-          status: 'active',
-          clients: 0,
-          earnings: '$0.00'
-        }))
-        
-        setTherapists(transformedTherapists)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An unknown error occurred')
-      } finally {
-        setLoading(false)
-      }
-    }
+        const data = await response.json();
 
-    fetchTherapists()
-  }, [])
+        const transformedTherapists: Therapist[] = data.therapists.map(
+          (therapist: Therapist) => ({
+            ...therapist,
+            status: therapist.status || "active",
+            clients: therapist.clients || 0,
+            earnings: therapist.earnings || "$0.00",
+          })
+        );
+
+        if (isMounted) {
+          setTherapists(transformedTherapists);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(
+            err instanceof Error ? err.message : "An unknown error occurred"
+          );
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchTherapists();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleTherapistAdded = (newTherapist: Therapist) => {
-    setTherapists(prev => [
+    setTherapists((prev) => [
       ...prev,
       {
         ...newTherapist,
-        status: 'active',
-        clients: 0,
-        earnings: '$0.00'
-      }
-    ])
-  }
+        status: newTherapist.status || "active",
+        clients: newTherapist.clients || 0,
+        earnings: newTherapist.earnings || "$0.00",
+      },
+    ]);
+  };
 
   const handleTherapistUpdated = (updatedTherapist: Therapist | null | undefined) => {
     if (!updatedTherapist || !updatedTherapist.tid) {
-      console.warn("Invalid therapist object passed to handleTherapistUpdated:", updatedTherapist);
       return;
     }
-  
-    setTherapists(prev => 
-      prev.map(t => 
+
+    setTherapists((prev) =>
+      prev.map((t) =>
         t.tid === updatedTherapist.tid ? { ...t, ...updatedTherapist } : t
       )
-    )
-  }
-  
+    );
+  };
 
   const handleTherapistDeleted = (tid: string) => {
-    setTherapists(prev => prev.filter(t => t.tid !== tid))
-  }
+    setTherapists((prev) => prev.filter((t) => t.tid !== tid));
+  };
 
   const filteredTherapists = therapists.filter((therapist) => {
     if (filterStatus !== "all" && therapist.status !== filterStatus) {
-      return false
+      return false;
     }
 
     if (searchQuery) {
-      const query = searchQuery.toLowerCase()
+      const query = searchQuery.toLowerCase();
       return (
         therapist.name.toLowerCase().includes(query) ||
         therapist.email.toLowerCase().includes(query) ||
         (therapist.info && therapist.info.toLowerCase().includes(query)) ||
         therapist.tid.toLowerCase().includes(query)
-      )
+      );
     }
 
-    return true
-  })
+    return true;
+  });
 
   if (loading) {
-    return <div className="p-8">Loading therapists...</div>
+    return <div className="p-8">Loading therapists...</div>;
   }
 
   if (error) {
-    return <div className="p-8 text-red-500">Error: {error}</div>
+    return <div className="p-8 text-red-500">Error: {error}</div>;
   }
 
   return (
@@ -167,9 +185,15 @@ export default function TherapistsPage() {
               <DropdownMenuContent align="end" className="w-[200px]">
                 <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setFilterStatus("all")}>All Therapists</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setFilterStatus("active")}>Active Therapists</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setFilterStatus("inactive")}>Inactive Therapists</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setFilterStatus("all")}>
+                  All Therapists
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setFilterStatus("active")}>
+                  Active Therapists
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setFilterStatus("inactive")}>
+                  Inactive Therapists
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
             <Button variant="outline" className="gap-1">
@@ -208,11 +232,16 @@ export default function TherapistsPage() {
                 {filteredTherapists.length > 0 ? (
                   filteredTherapists.map((therapist) => (
                     <TableRow key={therapist.tid}>
-                      <TableCell className="font-medium">{therapist.tid.substring(0, 6)}...</TableCell>
+                      <TableCell className="font-medium">
+                        {therapist.tid.substring(0, 6)}...
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Avatar className="h-8 w-8">
-                            <AvatarImage src={`/placeholder.svg?height=32&width=32`} alt={therapist.name} />
+                            <AvatarImage
+                              src={`/placeholder.svg?height=32&width=32`}
+                              alt={therapist.name}
+                            />
                             <AvatarFallback>
                               {therapist.name
                                 .split(" ")
@@ -222,28 +251,34 @@ export default function TherapistsPage() {
                           </Avatar>
                           <div>
                             <div className="font-medium">{therapist.name}</div>
-                            <div className="text-sm text-muted-foreground">{therapist.email}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {therapist.email}
+                            </div>
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>{therapist.info || 'Not specified'}</TableCell>
+                      <TableCell>{therapist.info || "Not specified"}</TableCell>
                       <TableCell>
                         <Badge
                           variant={therapist.status === "active" ? "default" : "secondary"}
                           className={
-                            therapist.status === "active" ? "bg-green-100 text-green-800 hover:bg-green-100" : ""
+                            therapist.status === "active"
+                              ? "bg-green-100 text-green-800 hover:bg-green-100"
+                              : ""
                           }
                         >
                           {therapist.status === "active" ? "Active" : "Inactive"}
                         </Badge>
                       </TableCell>
-                      <TableCell>{therapist.clients || 0}</TableCell>
+                      <TableCell>{therapist.clients}</TableCell>
                       <TableCell>
-                        {therapist.availability_hours ? `${therapist.availability_hours} hours/week` : 'Not specified'}
+                        {therapist.availability_hours
+                          ? `${therapist.availability_hours} hours/week`
+                          : "Not specified"}
                       </TableCell>
-                      <TableCell>{therapist.earnings || '$0.00'}</TableCell>
+                      <TableCell>{therapist.earnings}</TableCell>
                       <TableCell className="text-right">
-                        <TherapistActions 
+                        <TherapistActions
                           therapist={therapist}
                           onTherapistUpdated={handleTherapistUpdated}
                           onTherapistDeleted={handleTherapistDeleted}
@@ -264,5 +299,5 @@ export default function TherapistsPage() {
         </Card>
       </div>
     </div>
-  )
+  );
 }

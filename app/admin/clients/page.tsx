@@ -540,76 +540,57 @@ useEffect(() => {
     }
   }
 
-const handleAddClient = async () => {
-  try {
-    console.log('=== FRONTEND REQUEST START ===');
-    console.log('Initial formData:', formData);
-
-    if (!formData.name || !formData.email) {
-      showNotification('Error', 'Name and Email are required fields.');
-      return;
-    }
-
-    // Parse form_response 
-    let parsedFormResponse = null;
+  const handleAddClient = async () => {
     try {
-      parsedFormResponse = formData.form_response ? JSON.parse(formData.form_response) : null;
-      console.log('Parsed form response:', parsedFormResponse);
-    } catch (e) {
-      console.error('JSON parse error:', e);
-      showNotification('Error', 'Invalid JSON in form response field.');
-      return;
+      if (!formData.name || !formData.email) {
+        showNotification("Error", "Name and Email are required fields.");
+        return;
+      }
+  
+      // Parse form_response
+      let parsedFormResponse = null;
+      try {
+        parsedFormResponse = formData.form_response
+          ? JSON.parse(formData.form_response)
+          : null;
+      } catch (e) {
+        showNotification("Error", "Invalid JSON in form response field.");
+        return;
+      }
+  
+      const requestBody = {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone || null,
+        assigned_tid: null, // Always null - no therapist assignment
+        is_active: formData.is_active,
+        call_request_status: formData.call_request_status,
+        form_response: parsedFormResponse ? JSON.stringify(parsedFormResponse) : null,
+      };
+  
+      const response = await fetch("/api/admin/clients", {
+        method: "POST",
+        headers: await getAuthHeaders(),
+        body: JSON.stringify(requestBody),
+      });
+  
+      const data = await response.json();
+  
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to create client");
+      }
+  
+      setClients((prev) => [...prev, data.user]);
+      setShowAddModal(false);
+      resetForm();
+      showNotification("Success", `Client "${formData.name}" has been created successfully.`);
+    } catch (error) {
+      showNotification(
+        "Error",
+        error instanceof Error ? error.message : "Failed to create client"
+      );
     }
-
-    const requestBody = {
-      name: formData.name,
-      email: formData.email,
-      phone: formData.phone || null,
-      assigned_tid: null, // Always null - no therapist assignment
-      is_active: formData.is_active,
-      call_request_status: formData.call_request_status,
-      form_response: parsedFormResponse ? JSON.stringify(parsedFormResponse) : null
-    };
-
-    console.log('Request body to send:', requestBody);
-    console.log('Request body JSON:', JSON.stringify(requestBody, null, 2));
-
-    console.log('Making fetch request...');
-    const response = await fetch('/api/admin/clients', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody),
-    });
-
-    console.log('Response received:');
-    console.log('- status:', response.status);
-    console.log('- statusText:', response.statusText);
-    console.log('- ok:', response.ok);
-
-    const data = await response.json();
-    console.log('Response data:', data);
-
-    if (!response.ok) {
-      throw new Error(data.error || 'Failed to create client');
-    }
-
-    setClients(prev => [...prev, data.user]);
-    setShowAddModal(false);
-    resetForm();
-    showNotification('Success', `Client "${formData.name}" has been created successfully.`);
-
-    console.log('=== FRONTEND REQUEST SUCCESS ===');
-
-  } catch (error) {
-    console.error('=== FRONTEND REQUEST ERROR ===');
-    console.error('Error type:', error.constructor.name);
-    console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
-    showNotification('Error', error instanceof Error ? error.message : 'Failed to create client');
-  }
-};
+  };
 
   const handleEditClient = async () => {
     try {

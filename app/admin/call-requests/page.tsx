@@ -1,11 +1,24 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { ArrowUpDown, Check, ChevronDown, Filter, MoreHorizontal, Phone, Search, X } from "lucide-react"
-import { AdminHeader } from "@/components/admin/header"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
+import { useState, useEffect } from "react";
+import {
+  ArrowUpDown,
+  Check,
+  ChevronDown,
+  Filter,
+  Phone,
+  Search,
+} from "lucide-react";
+import { AdminHeader } from "@/components/admin/header";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,11 +26,17 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+} from "@/components/ui/dropdown-menu";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Dialog,
   DialogContent,
@@ -25,10 +44,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { useToast } from "@/components/ui/use-toast"
+} from "@/components/ui/dialog";
+import { useToast } from "@/components/ui/use-toast";
 
 interface User {
   uid: string;
@@ -40,158 +57,142 @@ interface User {
 }
 
 export default function CallRequestsPage() {
-  const [filterStatus, setFilterStatus] = useState<"all" | "pending" | "completed">("all")
-  const [searchQuery, setSearchQuery] = useState("")
-  const [users, setUsers] = useState<User[]>([])
-  const [selectedUser, setSelectedUser] = useState<User | null>(null)
-  const [isCallDialogOpen, setIsCallDialogOpen] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isUpdating, setIsUpdating] = useState<string | null>(null) // Track which user is being updated
+  const [filterStatus, setFilterStatus] = useState<
+    "all" | "pending" | "completed"
+  >("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [users, setUsers] = useState<User[]>([]);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [isCallDialogOpen, setIsCallDialogOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isUpdating, setIsUpdating] = useState<string | null>(null);
 
-  const { toast } = useToast()
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchCallRequests = async () => {
       try {
-        setIsLoading(true)
-        const response = await fetch('/api/callreq')
-        const data = await response.json()
-        if (response.ok) {
-          console.log('Fetched users data:', data.data) // Debug log
-          console.log('First user structure:', data.data[0]) // Debug log
-          setUsers(data.data)
-        } else {
-          throw new Error(data.error || 'Failed to fetch call requests')
+        setIsLoading(true);
+        const response = await fetch("/api/callreq");
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to fetch call requests");
         }
+        setUsers(data.data);
       } catch (error) {
         toast({
           variant: "destructive",
           title: "Error",
-          description: error instanceof Error ? error.message : 'Failed to fetch call requests',
-        })
+          description:
+            error instanceof Error
+              ? error.message
+              : "Failed to fetch call requests",
+        });
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
+    };
 
-    fetchCallRequests()
-  }, [toast])
+    fetchCallRequests();
+  }, [toast]);
 
   const filteredUsers = users.filter((user) => {
-    // Filter by status
     if (filterStatus !== "all" && user.call_request_status !== filterStatus) {
-      return false
+      return false;
     }
 
-    // Filter by search query
     if (searchQuery) {
-      const query = searchQuery.toLowerCase()
+      const query = searchQuery.toLowerCase();
       return (
         user.name.toLowerCase().includes(query) ||
         user.email.toLowerCase().includes(query) ||
         user.phone.toLowerCase().includes(query)
-      )
+      );
     }
 
-    return true
-  })
+    return true;
+  });
 
   const handleCallClick = (user: User) => {
-    console.log('handleCallClick called with user:', user.uid, user.name)
-    setSelectedUser(user)
-    setIsCallDialogOpen(true)
-  }
+    setSelectedUser(user);
+    setIsCallDialogOpen(true);
+  };
 
   const markAsCompleted = async (uid: string) => {
-    // Validate uid is not null or empty
-    if (!uid || uid.trim() === '') {
+    if (!uid || uid.trim() === "") {
       toast({
         variant: "destructive",
         title: "Error",
         description: "Invalid user ID. Cannot update call request status.",
-      })
-      return
+      });
+      return;
     }
 
-    console.log('Attempting to update user with UID:', uid) // Debug log
-
     try {
-      setIsUpdating(uid) // Set loading state for this specific user
-      
-      const updateData = {
-        call_request_status: 'completed'
-      }
-
-      console.log('Making PATCH request to:', `/api/users/${uid}`) // Debug log
-      console.log('Request payload:', updateData) // Debug log
-
+      setIsUpdating(uid);
       const response = await fetch(`/api/users/${uid}`, {
-        method: 'PATCH',
+        method: "PATCH",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify(updateData)
-      })
-
-      console.log('Response status:', response.status) // Debug log
-      console.log('Response ok:', response.ok) // Debug log
-
-      const responseData = await response.json()
-      console.log('Response data:', responseData) // Debug log
+        body: JSON.stringify({ call_request_status: "completed" }),
+      });
 
       if (!response.ok) {
-        throw new Error(responseData.error || 'Failed to update call request status')
+        const responseData = await response.json();
+        throw new Error(
+          responseData.error || "Failed to update call request status"
+        );
       }
 
-      // Update local state with the returned data or fallback to optimistic update
-      setUsers(users.map(user => 
-        user.uid === uid ? { 
-          ...user, 
-          call_request_status: 'completed'
-        } : user
-      ))
+      setUsers((prevUsers) =>
+        prevUsers.map((user) =>
+          user.uid === uid
+            ? { ...user, call_request_status: "completed" }
+            : user
+        )
+      );
 
       toast({
         title: "Success",
         description: "Call request marked as completed",
-      })
+      });
     } catch (error) {
-      console.error('Error updating call request status:', error)
       toast({
         variant: "destructive",
         title: "Error",
-        description: error instanceof Error ? error.message : 'Failed to update call request status',
-      })
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to update call request status",
+      });
     } finally {
-      setIsUpdating(null) // Clear loading state
+      setIsUpdating(null);
     }
-  }
+  };
 
   const handlePlaceCallAndComplete = async () => {
-    console.log('handlePlaceCallAndComplete called')
-    console.log('selectedUser:', selectedUser)
-    
     if (!selectedUser?.uid) {
-      console.log('No selectedUser or UID found')
       toast({
         variant: "destructive",
         title: "Error",
         description: "No user selected or invalid user ID.",
-      })
-      return
+      });
+      return;
     }
 
-    console.log('About to call markAsCompleted with UID:', selectedUser.uid)
-    await markAsCompleted(selectedUser.uid)
-    setIsCallDialogOpen(false)
-  }
+    await markAsCompleted(selectedUser.uid);
+    setIsCallDialogOpen(false);
+  };
 
   return (
     <div className="h-full flex flex-col">
       <AdminHeader title="Call Requests" />
       <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-3xl font-bold tracking-tight">Client Call Requests</h2>
+          <h2 className="text-3xl font-bold tracking-tight">
+            Client Call Requests
+          </h2>
         </div>
 
         <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
@@ -217,9 +218,15 @@ export default function CallRequestsPage() {
               <DropdownMenuContent align="end" className="w-[200px]">
                 <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setFilterStatus("all")}>All Requests</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setFilterStatus("pending")}>Pending</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setFilterStatus("completed")}>Completed</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setFilterStatus("all")}>
+                  All Requests
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setFilterStatus("pending")}>
+                  Pending
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setFilterStatus("completed")}>
+                  Completed
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -229,7 +236,9 @@ export default function CallRequestsPage() {
           <CardHeader className="p-4 pb-2">
             <CardTitle>Call Request List</CardTitle>
             <CardDescription>
-              {filterStatus === "all" ? "Showing all call requests" : `Showing ${filterStatus} requests only`}
+              {filterStatus === "all"
+                ? "Showing all call requests"
+                : `Showing ${filterStatus} requests only`}
             </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
@@ -262,17 +271,15 @@ export default function CallRequestsPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredUsers.map((user) => {
-                    console.log('Rendering user:', user) // Debug log
-                    const userId = user.uid || user.id || user.user_id // Try different possible ID fields
-                    console.log('User ID found:', userId) // Debug log
-                    
-                    return (
-                    <TableRow key={userId || `user-${Math.random()}`}>
+                  filteredUsers.map((user) => (
+                    <TableRow key={user.uid}>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Avatar className="h-8 w-8">
-                            <AvatarImage src={`/placeholder.svg?height=32&width=32`} alt={user.name} />
+                            <AvatarImage
+                              src={`/placeholder.svg?height=32&width=32`}
+                              alt={user.name}
+                            />
                             <AvatarFallback>
                               {user.name
                                 .split(" ")
@@ -282,11 +289,15 @@ export default function CallRequestsPage() {
                           </Avatar>
                           <div>
                             <div className="font-medium">{user.name}</div>
-                            <div className="text-sm text-muted-foreground">{user.email}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {user.email}
+                            </div>
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>{new Date(user.created_at).toLocaleString()}</TableCell>
+                      <TableCell>
+                        {new Date(user.created_at).toLocaleString()}
+                      </TableCell>
                       <TableCell>{user.phone}</TableCell>
                       <TableCell>
                         <Badge
@@ -318,13 +329,8 @@ export default function CallRequestsPage() {
                                 variant="outline"
                                 size="icon"
                                 className="h-8 w-8 bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800"
-                                onClick={(e) => {
-                                  console.log('Call button clicked for user:', userId, user.name)
-                                  e.preventDefault()
-                                  e.stopPropagation()
-                                  handleCallClick(user)
-                                }}
-                                disabled={isUpdating === userId}
+                                onClick={() => handleCallClick(user)}
+                                disabled={isUpdating === user.uid}
                               >
                                 <Phone className="h-4 w-4" />
                                 <span className="sr-only">Call client</span>
@@ -333,32 +339,24 @@ export default function CallRequestsPage() {
                                 variant="outline"
                                 size="icon"
                                 className="h-8 w-8"
-                                onClick={(e) => {
-                                  console.log('Mark complete button clicked for user:', userId, user.name)
-                                  e.preventDefault()
-                                  e.stopPropagation()
-                                  if (userId) {
-                                    markAsCompleted(userId)
-                                  } else {
-                                    console.error('No valid user ID found for user:', user)
-                                  }
-                                }}
-                                disabled={isUpdating === userId}
+                                onClick={() => markAsCompleted(user.uid)}
+                                disabled={isUpdating === user.uid}
                               >
-                                {isUpdating === userId ? (
+                                {isUpdating === user.uid ? (
                                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                                 ) : (
                                   <Check className="h-4 w-4" />
                                 )}
-                                <span className="sr-only">Mark as completed</span>
+                                <span className="sr-only">
+                                  Mark as completed
+                                </span>
                               </Button>
                             </>
                           )}
                         </div>
                       </TableCell>
                     </TableRow>
-                    )
-                  })
+                  ))
                 )}
               </TableBody>
             </Table>
@@ -371,12 +369,17 @@ export default function CallRequestsPage() {
           <DialogContent className="sm:max-w-[525px]">
             <DialogHeader>
               <DialogTitle>Call Client</DialogTitle>
-              <DialogDescription>You are about to call {selectedUser.name}</DialogDescription>
+              <DialogDescription>
+                You are about to call {selectedUser.name}
+              </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="flex flex-col items-center justify-center gap-4">
                 <Avatar className="h-20 w-20">
-                  <AvatarImage src={`/placeholder.svg?height=80&width=80`} alt={selectedUser.name} />
+                  <AvatarImage
+                    src={`/placeholder.svg?height=80&width=80`}
+                    alt={selectedUser.name}
+                  />
                   <AvatarFallback className="text-xl">
                     {selectedUser.name
                       .split(" ")
@@ -386,23 +389,25 @@ export default function CallRequestsPage() {
                 </Avatar>
                 <div className="text-center">
                   <h3 className="text-lg font-medium">{selectedUser.name}</h3>
-                  <p className="text-sm text-muted-foreground">{selectedUser.phone}</p>
-                  <p className="text-xs text-muted-foreground mt-1">UID: {selectedUser.uid}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedUser.phone}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    UID: {selectedUser.uid}
+                  </p>
                 </div>
               </div>
             </div>
             <DialogFooter className="gap-2">
-              <Button variant="outline" onClick={() => setIsCallDialogOpen(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setIsCallDialogOpen(false)}
+              >
                 Cancel
               </Button>
-              <Button 
-                className="bg-green-600 hover:bg-green-700 gap-2" 
-                onClick={(e) => {
-                  console.log('Place call button clicked in dialog')
-                  e.preventDefault()
-                  e.stopPropagation()
-                  handlePlaceCallAndComplete()
-                }}
+              <Button
+                className="bg-green-600 hover:bg-green-700 gap-2"
+                onClick={handlePlaceCallAndComplete}
                 disabled={isUpdating === selectedUser.uid}
               >
                 {isUpdating === selectedUser.uid ? (
@@ -417,5 +422,5 @@ export default function CallRequestsPage() {
         </Dialog>
       )}
     </div>
-  )
+  );
 }
