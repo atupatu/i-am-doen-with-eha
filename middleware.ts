@@ -53,7 +53,7 @@ export async function middleware(req: NextRequest) {
   if (pathname.startsWith('/therapist') && role !== 'therapist') {
     return NextResponse.redirect(new URL('/403', req.url))
   }
-  if (pathname.startsWith('/client') && role !== 'client') {
+  if (pathname.startsWith('/client') && role !== 'user') {
     return NextResponse.redirect(new URL('/403', req.url))
   }
 

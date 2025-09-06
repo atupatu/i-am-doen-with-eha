@@ -1,205 +1,3 @@
-/*"use client"
-
-import { useEffect } from "react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { useFormState } from "react-dom"
-import { signIn, signUp } from "@/lib/actions"
-
-const initialSignInState = { error: null, success: false }
-const initialSignUpState = { error: null, success: false }
-
-export default function AuthForm() {
-  const [signInState, signInAction] = useFormState(signIn, initialSignInState)
-  const [signUpState, signUpAction] = useFormState(signUp, initialSignUpState)
-  const router = useRouter()
- 
-  // If sign-in is successful, redirect to the home page
-  useEffect(() => {
-    if (signInState.success) {
-      // Set user info in localStorage for persistence
-      localStorage.setItem("userAuthenticated", "true")
-      localStorage.setItem("userName", "John Doe") // Default user name
-      router.push("/")
-    }
-  }, [signInState.success, router])
-
-  // If sign-up is successful, redirect to the onboarding form
-  useEffect(() => {
-    if (signUpState.success) {
-      // Set user info in localStorage for persistence
-      localStorage.setItem("userAuthenticated", "true")
-      localStorage.setItem("userName", "John Doe") // Default user name
-      router.push("/account/onboarding")
-    }
-  }, [signUpState.success, router])
-
-  return (
-    <Card className="w-full shadow-lg border-0">
-      <CardHeader className="bg-[#a98cc8]/10 rounded-t-lg">
-        <CardTitle className="text-2xl font-bold text-center text-gray-800">Welcome to Echoing Healthy Aging</CardTitle>
-        <CardDescription className="text-center text-gray-600">Your journey to wellness begins here</CardDescription>
-      </CardHeader>
-      <CardContent className="pt-6">
-        <Tabs defaultValue="signin" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger
-              value="signin"
-              className="rounded-l-lg data-[state=active]:bg-[#a98cc8] data-[state=active]:text-white"
-            >
-              Sign In
-            </TabsTrigger>
-            <TabsTrigger
-              value="signup"
-              className="rounded-r-lg data-[state=active]:bg-[#a98cc8] data-[state=active]:text-white"
-            >
-              Sign Up
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="signin" className="space-y-4">
-            <form action={signInAction} className="space-y-4">
-              {signInState.error && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">
-                  {signInState.error}
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
-                <Input
-                  id="username"
-                  name="username"
-                  placeholder="Enter your username"
-                  className="rounded-xl"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <Label htmlFor="password">Password</Label>
-                  <Link href="/forgot-password" className="text-xs text-[#a98cc8] hover:underline">
-                    Forgot password?
-                  </Link>
-                </div>
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  placeholder="••••••••"
-                  className="rounded-xl"
-                  required
-                />
-              </div>
-
-              <div className="flex items-center space-x-2 my-4">
-                <Checkbox id="remember" name="remember" />
-                <label
-                  htmlFor="remember"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  Remember me
-                </label>
-              </div>
-
-              <Button type="submit" className="w-full bg-[#a98cc8] hover:bg-[#9678b4] text-white rounded-xl py-6">
-                Sign In
-              </Button>
-            </form>
-
-            <div className="text-center text-sm text-gray-500 mt-4">
-              Don't have an account?{" "}
-              <button
-                className="text-[#a98cc8] hover:underline"
-                onClick={() => document.getElementById("signup-tab")?.click()}
-              >
-                Sign up
-              </button>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="signup" className="space-y-4" id="signup-tab">
-            <form action={signUpAction} className="space-y-4">
-              {signUpState.error && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">
-                  {signUpState.error}
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <Label htmlFor="new-username">Username</Label>
-                <Input
-                  id="new-username"
-                  name="username"
-                  placeholder="Choose a username"
-                  className="rounded-xl"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="new-password">Password</Label>
-                <Input
-                  id="new-password"
-                  name="password"
-                  type="password"
-                  placeholder="Choose a password"
-                  className="rounded-xl"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="confirm-password">Confirm Password</Label>
-                <Input
-                  id="confirm-password"
-                  name="confirmPassword"
-                  type="password"
-                  placeholder="Confirm your password"
-                  className="rounded-xl"
-                  required
-                />
-              </div>
-
-              <div className="flex items-center space-x-2 my-4">
-                <Checkbox id="terms" name="terms" required />
-                <label htmlFor="terms" className="text-sm font-medium leading-none">
-                  I agree to the{" "}
-                  <Link href="/terms" className="text-[#a98cc8] hover:underline">
-                    terms and conditions
-                  </Link>
-                </label>
-              </div>
-
-              <Button type="submit" className="w-full bg-[#a98cc8] hover:bg-[#9678b4] text-white rounded-xl py-6">
-                Create Account
-              </Button>
-            </form>
-
-            <div className="text-center text-sm text-gray-500 mt-4">
-              Already have an account?{" "}
-              <button
-                className="text-[#a98cc8] hover:underline"
-                onClick={() => document.getElementById("signin-tab")?.click()}
-              >
-                Sign in
-              </button>
-            </div>
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-    </Card>
-  )
-}
-*/
-
 "use client"
 
 import { useState, useRef } from "react"
@@ -230,140 +28,184 @@ export default function AuthForm() {
   const supabase = createClientComponentClient()
   const signinEmailRef = useRef<HTMLInputElement>(null)
 
+  // Helper function to redirect based on role using window.location
+  const redirectByRole = (role: string) => {
+    let redirectPath = "/"
+    
+    switch (role) {
+      case 'user':
+        redirectPath = "/client/schedule"
+        break
+      case 'therapist':
+        redirectPath = "/therapist/dashboard"
+        break
+      case 'admin':
+        redirectPath = "/admin/dashboard"
+        break
+      default:
+        redirectPath = "/"
+    }
+
+    console.log(`Redirecting to: ${redirectPath}`)
+    
+    // Use window.location.href for more reliable redirection
+    window.location.href = redirectPath
+  }
+
   // Handle sign in
   const handleSignIn = async (event: React.FormEvent<HTMLFormElement>) => {
-  event.preventDefault()
-  const form = new FormData(event.currentTarget)
-  const email = form.get("email") as string
-  const password = form.get("password") as string
+    event.preventDefault()
+    const form = new FormData(event.currentTarget)
+    const email = form.get("email") as string
+    const password = form.get("password") as string
 
-  setLoading(true)
-  setError(null)
-  
-  try {
-    const { error, data } = await supabase.auth.signInWithPassword({ 
-      email, 
-      password 
-    })
+    setLoading(true)
+    setError(null)
+    
+    try {
+      console.log("Starting sign in process...")
+      
+      const { error, data } = await supabase.auth.signInWithPassword({ 
+        email, 
+        password 
+      })
 
-    if (error) {
-      setError(error.message)
-    } else {
-      // ✅ Get logged-in user ID
-      const userId = data.user?.id
-      if (userId) {
-        // 🔑 Fetch user role from Supabase
+      if (error) {
+        console.error("Sign in error:", error)
+        setError(error.message)
+        return
+      }
+
+      if (!data.user?.id) {
+        setError("Authentication failed - no user found")
+        return
+      }
+
+      console.log("User signed in successfully, fetching role...")
+
+      // Wait for the session to be properly set
+      await new Promise(resolve => setTimeout(resolve, 500))
+
+      // 🔑 Fetch user role from Supabase
+      const { data: roleData, error: roleError } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", data.user.id)
+        .single()
+
+      if (roleError) {
+        console.error("Error fetching user role:", roleError)
+        // If no role exists, redirect to onboarding
+        window.location.href = "/account/onboarding"
+        return
+      }
+
+      if (!roleData?.role) {
+        console.log("No role found, redirecting to onboarding")
+        window.location.href = "/account/onboarding"
+        return
+      }
+
+      const role = roleData.role
+      console.log("User role found:", role)
+      
+      // ✅ Redirect based on role
+      redirectByRole(role)
+
+    } catch (err) {
+      console.error("Unexpected sign in error:", err)
+      setError("An unexpected error occurred during sign in")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Handle sign up
+  const handleSignUp = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const form = new FormData(event.currentTarget)
+    const email = form.get("email") as string
+    const password = form.get("password") as string
+    const confirmPassword = form.get("confirmPassword") as string
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.")
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+    
+    try {
+      console.log("Starting sign up process...")
+      
+      const { error, data } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/account/onboarding`,
+        },
+      })
+
+      if (error) {
+        console.error("Sign up error:", error)
+        
+        if (
+          error.message.toLowerCase().includes("already registered") ||
+          error.message.toLowerCase().includes("email already") ||
+          error.message.toLowerCase().includes("already taken") ||
+          error.message.toLowerCase().includes("already exists") ||
+          error.message.toLowerCase().includes("user exists")
+        ) {
+          setAlreadyRegistered(true)
+          setRegisteredEmail(email)
+        } else {
+          setError(error.message)
+        }
+        return
+      }
+
+      // ✅ Handle successful signup
+      if (data.user) {
+        console.log("User signed up successfully")
+        
+        // Check if user needs email confirmation
+        if (!data.session) {
+          console.log("Email confirmation required")
+          setShowVerifyMessage(true)
+          return
+        }
+
+        console.log("User confirmed, checking for role...")
+
+        // Wait for the session to be properly set
+        await new Promise(resolve => setTimeout(resolve, 500))
+
+        // User is immediately confirmed, check if they have a role
         const { data: roleData, error: roleError } = await supabase
           .from("user_roles")
           .select("role")
-          .eq("user_id", userId)
+          .eq("user_id", data.user.id)
           .single()
 
-        if (roleError || !roleData) {
-          console.error("Could not fetch user role", roleError)
-          router.push("/") // fallback
+        if (roleError || !roleData?.role) {
+          console.log("No role found, redirecting to onboarding")
+          router.refresh()
+          router.push("/account/onboarding")
           return
         }
 
         const role = roleData.role
-        // ✅ Redirect based on role
-        if (role === "client") {
-          router.push("/client/schedule")
-        } else if (role === "therapist") {
-          router.push("/therapist/")
-        } else if (role === "admin") {
-          router.push("/admin/dashboard")
-        } else {
-          router.push("/") // fallback
-        }
-      } else {
-        router.push("/") // fallback if no user found
+        console.log("User role found after signup:", role)
+        redirectByRole(role)
       }
+    } catch (err) {
+      console.error("Unexpected sign up error:", err)
+      setError("An unexpected error occurred during sign up")
+    } finally {
+      setLoading(false)
     }
-  } catch (err) {
-    setError("An unexpected error occurred")
-  } finally {
-    setLoading(false)
   }
-}
-
-
-  // Handle sign up
-  const handleSignUp = async (event: React.FormEvent<HTMLFormElement>) => {
-  event.preventDefault()
-  const form = new FormData(event.currentTarget)
-  const email = form.get("email") as string
-  const password = form.get("password") as string
-  const confirmPassword = form.get("confirmPassword") as string
-
-  if (password !== confirmPassword) {
-    setError("Passwords do not match.")
-    return
-  }
-
-  setLoading(true)
-  setError(null)
-  
-  try {
-    const { error, data } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/account/onboarding`,
-      },
-    })
-
-    if (error) {
-      if (
-        error.message.toLowerCase().includes("already registered") ||
-        error.message.toLowerCase().includes("email already") ||
-        error.message.toLowerCase().includes("already taken") ||
-        error.message.toLowerCase().includes("already exists") ||
-        error.message.toLowerCase().includes("user exists")
-      ) {
-        setAlreadyRegistered(true)
-        setRegisteredEmail(email)
-      } else {
-        setError(error.message)
-      }
-    } else {
-      // ✅ If email confirmation is not required OR user is already confirmed, redirect by role immediately
-      if (data.user && !data.session?.expires_at) {
-        // Show verify email message if confirmation is required
-        setShowVerifyMessage(true)
-      } else if (data.user) {
-        // User already has a session, fetch their role and redirect
-        const userId = data.user.id
-        const { data: roleData, error: roleError } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", userId)
-          .single()
-
-        if (roleError || !roleData) {
-          console.error("Could not fetch user role", roleError)
-          router.push("/account/onboarding") // fallback if no role yet
-        } else {
-          const role = roleData.role
-          if (role === "client") {
-            router.push("/client/schedule")
-          } else if (role === "therapist") {
-            router.push("/therapist")
-          } else if (role === "admin") {
-            router.push("/admin/dashboard")
-          } else {
-            router.push("/account/onboarding")
-          }
-        }
-      }
-    }
-  } catch (err) {
-    setError("An unexpected error occurred")
-  } finally {
-    setLoading(false)
-  }
-}
-
 
   const handleSwitchToSignIn = () => {
     setActiveTab("signin")
@@ -373,6 +215,7 @@ export default function AuthForm() {
       }
     }, 100)
     setAlreadyRegistered(false)
+    setError(null)
   }
 
   if (alreadyRegistered) {
@@ -485,7 +328,11 @@ export default function AuthForm() {
                 <label htmlFor="remember" className="text-sm font-medium">Remember me</label>
               </div>
 
-              <Button type="submit" className="w-full bg-[#a98cc8] hover:bg-[#9678b4] text-white rounded-xl py-6">
+              <Button 
+                type="submit" 
+                disabled={loading}
+                className="w-full bg-[#a98cc8] hover:bg-[#9678b4] text-white rounded-xl py-6 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 {loading ? "Signing In..." : "Sign In"}
               </Button>
             </form>
@@ -495,6 +342,7 @@ export default function AuthForm() {
               <button
                 className="text-[#a98cc8] hover:underline"
                 onClick={() => setActiveTab("signup")}
+                disabled={loading}
               >
                 Sign up
               </button>
@@ -565,7 +413,11 @@ export default function AuthForm() {
                 </label>
               </div>
 
-              <Button type="submit" className="w-full bg-[#a98cc8] hover:bg-[#9678b4] text-white rounded-xl py-6">
+              <Button 
+                type="submit" 
+                disabled={loading}
+                className="w-full bg-[#a98cc8] hover:bg-[#9678b4] text-white rounded-xl py-6 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 {loading ? "Creating Account..." : "Create Account"}
               </Button>
             </form>
@@ -575,6 +427,7 @@ export default function AuthForm() {
               <button
                 className="text-[#a98cc8] hover:underline"
                 onClick={() => setActiveTab("signin")}
+                disabled={loading}
               >
                 Sign in
               </button>

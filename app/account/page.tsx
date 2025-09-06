@@ -31,10 +31,10 @@ const supabase = createServerComponentClient({ cookies: () => cookieStore })
       console.log("User role:", role);
 
       // ✅ Redirect based on role
-      if (role === "client") {
-        redirect("/client")
+      if (role === "user") {
+        redirect("/client/schedule")
       } else if (role === "therapist") {
-        redirect("/therapist")
+        redirect("/therapist/schedule")
       } else if (role === "admin") {
         redirect("/admin")
       }
