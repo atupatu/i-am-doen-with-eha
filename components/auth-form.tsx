@@ -37,7 +37,7 @@ export default function AuthForm() {
         redirectPath = "/client/schedule"
         break
       case 'therapist':
-        redirectPath = "/therapist/dashboard"
+        redirectPath = "/therapist/schedule"
         break
       case 'admin':
         redirectPath = "/admin/dashboard"
