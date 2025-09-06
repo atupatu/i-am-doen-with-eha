@@ -1,4 +1,4 @@
-//this code is the component which is connected to  delete api
+  //this code is the component which is connected to  delete api
 
 "use client"
 

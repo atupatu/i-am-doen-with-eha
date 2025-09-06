@@ -16,7 +16,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Bell, User, Settings, LogOut } from "lucide-react"
-import { updateTherapistStatus } from "@/lib/therapist-actions"
 
 export default function TherapistHeader() {
   const [isOnline, setIsOnline] = useState(true)
@@ -26,7 +25,8 @@ export default function TherapistHeader() {
 
   const handleStatusChange = async (checked: boolean) => {
     setIsOnline(checked)
-    await updateTherapistStatus(checked)
+    // Removed updateTherapistStatus call since it's not implemented
+    console.log("Therapist status changed to:", checked ? "Online" : "Offline")
   }
 
   const handleSignOut = async () => {
@@ -40,7 +40,7 @@ export default function TherapistHeader() {
 
   return (
     <header className="border-b bg-white py-3 px-6 flex items-center justify-between">
-      {/* Status Switch... */}
+      {/* Status Switch */}
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
           <Label htmlFor="online-mode" className="text-sm font-medium">
@@ -56,13 +56,13 @@ export default function TherapistHeader() {
       </div>
 
       <div className="flex items-center gap-4">
-        {/* Notifications... */}
+        {/* Notifications */}
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
           <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
         </Button>
 
-        {/* User Dropdown Menu... */}
+        {/* User Dropdown Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="flex items-center gap-2">
@@ -88,19 +88,16 @@ export default function TherapistHeader() {
               <span>Settings</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            {/* CHANGE: Use onSelect instead of onClick */}
-            // CHANGE: Use an inline function in onSelect to prevent default behavior
-
-<DropdownMenuItem
-  onSelect={(e) => {
-    e.preventDefault()
-    handleSignOut()
-  }}
-  className="text-red-500 cursor-pointer"
->
-  <LogOut className="mr-2 h-4 w-4" />
-  <span>Sign out</span>
-</DropdownMenuItem>
+            <DropdownMenuItem
+              onSelect={(e) => {
+                e.preventDefault()
+                handleSignOut()
+              }}
+              className="text-red-500 cursor-pointer"
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              <span>Sign out</span>
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

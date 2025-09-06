@@ -33,7 +33,7 @@ export default async function ProfilePage() {
   }
 
   // Fetch user data using the API (no auth header needed)
-  const res = await fetch(`http://localhost:3000/api/users/${user.id}`, {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/users/${user.id}`, {
     cache: "no-store",
   })
 

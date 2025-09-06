@@ -40,7 +40,9 @@ interface WeeklyAvailability {
 // Helper function to get sessions data
 async function getTherapistSessions() {
   try {
-    const supabase = createServerComponentClient({ cookies })
+    const cookieStore = cookies()
+const supabase = createServerComponentClient({ cookies: () => cookieStore })
+
     const { data: { session }, error: sessionError } = await supabase.auth.getSession()
     
     if (sessionError) {
@@ -51,7 +53,7 @@ async function getTherapistSessions() {
       return { error: 'No valid session', data: [] }
     }
 
-    const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/sessions/therapist/${session.user.id}`
+    const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/sessions/therapist/${session.user.id}`
 
     const response = await fetch(apiUrl, {
       headers: {

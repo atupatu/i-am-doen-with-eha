@@ -38,7 +38,7 @@ export default async function TherapistProfilePage() {
   }
 
   // Now fetch therapist profile using the actual tid
-  const res = await fetch(`http://localhost:3000/api/therapists/${therapistRecord.tid}`, {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/therapists/${therapistRecord.tid}`, {
     cache: "no-store",
   });
 

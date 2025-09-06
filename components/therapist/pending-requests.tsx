@@ -1,9 +1,7 @@
-import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Clock, MapPin, Check, X } from "lucide-react"
+import { Calendar, Clock, MapPin } from "lucide-react"
 import { formatDate, formatTime } from "@/lib/utils"
-import { confirmAppointment, rejectAppointment } from "@/lib/therapist-actions"
 
 interface RequestProps {
   id: number
@@ -71,24 +69,6 @@ export default function PendingRequests({ requests }: PendingRequestsProps) {
                 <span className="truncate">{request.location}</span>
               </div>
             </div>
-          </div>
-          <div className="flex gap-2">
-            <form action={confirmAppointment}>
-              <input type="hidden" name="requestId" value={request.id} />
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-8 w-8 text-green-600 border-green-200 hover:bg-green-50"
-              >
-                <Check className="h-4 w-4" />
-              </Button>
-            </form>
-            <form action={rejectAppointment}>
-              <input type="hidden" name="requestId" value={request.id} />
-              <Button variant="outline" size="icon" className="h-8 w-8 text-red-600 border-red-200 hover:bg-red-50">
-                <X className="h-4 w-4" />
-              </Button>
-            </form>
           </div>
         </div>
       ))}

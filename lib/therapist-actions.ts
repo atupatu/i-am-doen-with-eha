@@ -91,7 +91,9 @@ interface WeeklyAvailability {
 }
 
 export async function updateTherapistAvailability(availability: WeeklyAvailability) {
-  const supabase = createServerComponentClient({ cookies })
+const cookieStore = cookies() // ✅ No await here
+const supabase = createServerComponentClient({ cookies: () => cookieStore })
+
   const { data: { session } } = await supabase.auth.getSession()
 
   if (!session) {
@@ -108,7 +110,7 @@ export async function updateTherapistAvailability(availability: WeeklyAvailabili
     throw new Error('Therapist not found')
   }
 
-  const response = await fetch(`http://localhost:3000/api/therapists/${therapist.tid}`, {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/therapists/${therapist.tid}`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
