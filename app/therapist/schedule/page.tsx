@@ -53,7 +53,7 @@ const supabase = createServerComponentClient({ cookies: () => cookieStore })
       return { error: 'No valid session', data: [] }
     }
 
-    const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/sessions/therapist/${session.user.id}`
+    const apiUrl = `https://i-am-doen-with-eha.vercel.app/api/sessions/therapist/${session.user.id}`
 
     const response = await fetch(apiUrl, {
       headers: {
